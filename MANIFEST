@@ -14,4 +14,3 @@ t/3-pod-coverage.t
 t/options.conf
 Copying
 Artistic
-META.yml                                 Module meta-data (added by MakeMaker)

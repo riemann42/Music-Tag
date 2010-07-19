@@ -1,0 +1,1 @@
+/home/mythtv/bin/test-spelling.t
