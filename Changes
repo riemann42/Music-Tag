@@ -1,3 +1,7 @@
+Release Name: 0.29
+============================
+* Fixed bug in autoplugin default settings preventing ogg and flac from working.
+
 Release Name: 0.28
 ============================
 * Seperated plugins into seperate distributions

@@ -1,5 +1,5 @@
 package Music::Tag;
-our $VERSION = 0.28;
+our $VERSION = 0.29;
 
 # Copyright (c) 2007,2008 Edward Allen III. Some rights reserved.
 #
@@ -117,8 +117,8 @@ Option is a hash reference.  Reference maps file extensions to plugins. Default 
         mp4   => "M4A",
         m4b   => "M4A",
         '3gp' => "M4A",
-        ogg   => "ogg",
-        flac  => "flac"   }
+        ogg   => "OGG",
+        flac  => "FLAC"   }
 
 =item B<optionfile>
 
@@ -185,8 +185,8 @@ BEGIN {
 								mp4 => "M4A",
 								m4b => "M4A",
 							    '3gp' => "M4A",
-								ogg => "ogg",
-								flac => "flac"
+								ogg => "OGG",
+								flac => "FLAC"
 							}
                           }
       );
