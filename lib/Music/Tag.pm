@@ -1,4 +1,6 @@
 package Music::Tag;
+use strict qw(vars);
+use warnings;
 our $VERSION = 0.36;
 
 # Copyright (c) 2007,2008,2009 Edward Allen III. Some rights reserved.
@@ -7,7 +9,6 @@ our $VERSION = 0.36;
 # You may distribute under the terms of either the GNU General Public
 # License or the Artistic License, as specified in the README file.
 #
-
 
 =pod
 
@@ -126,13 +127,13 @@ An executable script, L<musictag> is  allows quick tagging of MP3 files.  To lea
 
 =cut
 
-use strict qw(vars);
 use Carp;
 use Locale::Country;
 use File::Spec;
 use Encode;
 use Config::Options;
 use Digest::SHA1;
+use Music::Tag::Generic;
 use utf8;
 use vars qw($AUTOLOAD %DataMethods);
 
@@ -149,7 +150,7 @@ Takes a filename, an optional hashref of options, and an optional first plugin a
     my $info = Music::Tag->new($filename, { quiet => 1 }, "MP3" ) ;
 
 If no plugin is listed, then it will automatically add the appropriate file plugin based on the extension. It 
-does this by using the L<Music::Tag::Auto> plugin. If no plugin is appropriate, it will return undef.  
+does this by using the L<Music::Tag::Auto> plugin. If no plugin is appropriate, it will return.  
 
 Options are global (apply to all plugins) and default (can be overridden by a plugin).
 
@@ -226,42 +227,6 @@ false if module is missing.
 
 =cut
 
-BEGIN {
-    $Music::Tag::DefaultOptions =
-      Config::Options->new(
-                          { verbose       => 0,
-                            quiet         => 0,
-                            ANSIColor     => 0,
-                            LevenshteinXS => 1,
-                            Levenshtein   => 1,
-                            TimeLocal     => 1,
-                            Unaccent      => 1,
-                            Inflect       => 0,
-                            optionfile => [ "/etc/musictag.conf", $ENV{HOME} . "/.musictag.conf" ],
-                          }
-      );
-    my @datamethods =
-      qw(album album_type albumartist albumartist_sortname albumid appleid artist artist_end artist_start artist_type artistid asin bitrate booklet bytes codec comment compilation composer copyright country countrycode disc discnum disctitle duration encoded_by encoder filename frames framesize frequency gaplessdata genre ipod ipod_dbid ipod_location ipod_trackid label lastplayed lyrics mb_albumid mb_artistid mb_trackid mip_puid mtime originalartist path picture playcount postgap pregap rating albumrating recorddate recordtime releasedate releasetime samplecount secs songid sortname stereo tempo title totaldiscs totaltracks track tracknum url user vbr year upc ean jan filetype mip_fingerprint artisttags albumtags tracktags);
-    %Music::Tag::DataMethods = map { $_ => 1 } @datamethods;
-    %Music::Tag::AUTOPLUGINS = ();
-    @Music::Tag::PLUGINS     = ();
-    my $myname = __PACKAGE__;
-    my $me     = $myname;
-    $me =~ s/\:\:/\//g;
-
-    foreach my $d (@INC) {
-        chomp $d;
-        if ( -d "$d/$me/" ) {
-            local (*F_DIR);
-            opendir( *F_DIR, "$d/$me/" );
-            while ( my $b = readdir(*F_DIR) ) {
-                next unless $b =~ /^(.*)\.pm$/;
-                my $mod = $1;
-                push @Music::Tag::PLUGINS, $mod;
-            }
-        }
-    }
-}
 
 =item B<available_plugins()>
 
@@ -275,7 +240,6 @@ Class method. Returns list of available plugins. For example:
     }
 
 =cut
-
 
 sub available_plugins {
     my $self  = shift;
@@ -358,7 +322,8 @@ sub new {
         $self->options->{LevenshteinXS} = 0;
         $self->options->{Levenshtein}   = 0;
     }
-    if ( ( $self->options->{Unaccent} ) && ( not $self->_has_module("Text::Unaccent::PurePerl") ) ) {
+    if ( ( $self->options->{Unaccent} ) && ( not $self->_has_module("Text::Unaccent::PurePerl") ) )
+    {
         $self->options->{Unaccent} = 0;
     }
     if ( ( $self->options->{Inflect} ) && ( not $self->_has_module("Lingua::EN::Inflect") ) ) {
@@ -383,7 +348,6 @@ sub _has_module {
     my $module  = shift;
     my $modfile = $module . ".pm";
     $modfile =~ s/\:\:/\//g;
-    no warnings;
     eval { require $modfile };
     if ($@) {
         $self->status( 1, "Not loading $module: " . $@ );
@@ -476,9 +440,7 @@ sub plugin {
             }
         }
     }
-    else {
-        return $self->{_plugins};
-    }
+	return $self->{_plugins};
 }
 
 =pod
@@ -493,12 +455,12 @@ get_tag applies all active plugins to the current Music::Tag object in the order
 
 sub get_tag {
     my $self = shift;
-    $self->_foreach_plugin(sub { $_[0]->get_tag });
+    $self->_foreach_plugin( sub { $_[0]->get_tag } );
     return $self;
 }
 
 sub _foreach_plugin {
-    my $self = shift;
+    my $self     = shift;
     my $callback = shift;
     foreach my $plugin ( @{ $self->{_plugins} } ) {
         next unless $plugin;
@@ -524,7 +486,7 @@ set_tag writes info back to disk for all Music::Tag plugins, or submits info if 
 
 sub set_tag {
     my $self = shift;
-    $self->_foreach_plugin(sub { $_[0]->set_tag });
+    $self->_foreach_plugin( sub { $_[0]->set_tag } );
     return $self;
 }
 
@@ -540,7 +502,7 @@ strip_tag removes info from on disc tag for all plugins. Specifically, it perfor
 
 sub strip_tag {
     my $self = shift;
-    $self->_foreach_plugin(sub { $_[0]->strip_tag });
+    $self->_foreach_plugin( sub { $_[0]->strip_tag } );
     return $self;
 }
 
@@ -555,9 +517,9 @@ closes active filehandles on all plugins. Should be called before object destroy
 =cut
 
 sub close {
-    my $self = shift;
+    my $self   = shift;
     my @params = @_;
-    $self->_foreach_plugin(sub { $_[0]->close(@params); $_->{info} = undef; $_ = undef});
+    return $self->_foreach_plugin( sub { $_[0]->close(@params); $_->{info} = undef; $_ = undef } );
 }
 
 =pod
@@ -643,7 +605,9 @@ sub setfileinfo {
         my @stat = stat $self->filename;
         $self->mtime( $stat[9] );
         $self->bytes( $stat[7] );
+		return \@stat;
     }
+	return
 }
 
 =item B<sha1()>
@@ -656,16 +620,17 @@ sub sha1 {
     my $self = shift;
     return unless ( ( $self->filename ) && ( -e $self->filename ) );
     my $maxsize = 4 * 4096;
-    open( IN, $self->filename ) or die "Bad file: $self->filename\n";
+	my $in;
+    open( $in, "<", $self->filename ) or die "Bad file: $self->filename\n";
     my @stat = stat $self->filename;
     my $sha1 = Digest::SHA1->new();
     $sha1->add( pack( "V", $stat[7] ) );
     my $d;
 
-    if ( read( IN, $d, $maxsize ) ) {
+    if ( read( $in, $d, $maxsize ) ) {
         $sha1->add($d);
     }
-    CORE::close(IN);
+    CORE::close($in);
     return $sha1->hexdigest;
 }
 
@@ -692,6 +657,16 @@ sub datamethods {
     my $new  = shift;
     if ($new) {
         $DataMethods{$new} = 1;
+		{
+			no strict 'refs';
+			if (! defined &{$new}) {
+				*{__PACKAGE__.'::'.$new} = sub {
+					my $self = shift;
+					my $n = shift;
+					$self->_accessor($new, $n);
+				} 
+			}
+		}
     }
     return [ keys %DataMethods ];
 }
@@ -700,7 +675,7 @@ sub datamethods {
 
 =item B<used_datamethods()>
 
-Returns an array reference of all data methods that will not return undef.  For example:
+Returns an array reference of all data methods that will not return.  For example:
 
     my $info = Music::Tag->new($filename);
     $info->get_tag();
@@ -738,9 +713,9 @@ Pipes audio data as a wav file to filehandled $fh. Returns true on success, fals
 
 sub wav_out {
     my $self = shift;
-    my $fh = shift;
+    my $fh   = shift;
     my $out;
-    $self->_foreach_plugin(sub { $out = $_->wav_out($fh); return $out if (defined $out)});
+    $self->_foreach_plugin( sub { $out = $_->wav_out($fh); return $out if ( defined $out ) } );
     return $out;
 }
 
@@ -748,7 +723,7 @@ sub wav_out {
 
 =head2 Data Access Methods
 
-These methods are used to access the Music::Tag data values. Not all methods are supported by all plugins. In fact, no single plugin supports all methods (yet). Each of these is an accessor function. If you pass it a value, it will set the variable. It always returns the value of the variable. It can return undef.
+These methods are used to access the Music::Tag data values. Not all methods are supported by all plugins. In fact, no single plugin supports all methods (yet). Each of these is an accessor function. If you pass it a value, it will set the variable. It always returns the value of the variable. It can return.
 
 =cut
 
@@ -799,6 +774,7 @@ sub _isutf8 {
         utf8::upgrade($out);
         return $out;
     }
+
     # Finally just give up and return it.
 
     utf8::upgrade($in);
@@ -806,10 +782,7 @@ sub _isutf8 {
 }
 
 sub _accessor {
-    my $self    = shift;
-    my $attr    = shift;
-    my $value   = shift;
-    my $default = shift;
+	my ($self, $attr, $value, $default) = @_;
     unless ( exists $self->{data}->{ uc($attr) } ) {
         $self->{data}->{ uc($attr) } = undef;
     }
@@ -850,7 +823,7 @@ sub _timeaccessor {
             $value = undef;
         }
     }
-    $self->_accessor( $attr, $value, $default );
+    return $self->_accessor( $attr, $value, $default );
 }
 
 sub _epochaccessor {
@@ -858,7 +831,7 @@ sub _epochaccessor {
     my $attr  = shift;
     my $value = shift;
     my $set   = undef;
-    return undef unless ( $self->options('TimeLocal') );
+    return unless ( $self->options('TimeLocal') );
     if ( defined($value) ) {
         my @tm = gmtime($value);
         $set = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -882,21 +855,27 @@ sub _dateaccessor {
     my $self  = shift;
     my $attr  = shift;
     my $value = shift;
-    my $set   = undef;
-    return undef unless ( $self->options('TimeLocal') );
+    my $new   = undef;
+    return unless ( $self->options('TimeLocal') );
     if ( defined($value) ) {
-        $set = $value;
+        $new = $value;
     }
-    my $v = $self->_timeaccessor( $attr, $set );
+    my $v = $self->_timeaccessor( $attr, $new );
     my $ret = undef;
     if ( ( defined $v )
         && (
-            $v =~ /^(\d\d\d\d)[ \-]?(\d\d)?[ \-]?(\d\d)?[ \-]?(\d\d)?[ \-:]?(\d\d)?[ \-:]?(\d\d)?/ )
+            $v =~ /^(\d\d\d\d)[\s\-]?  #Year
+			        (\d\d)?[\s\-]?     #Month
+					(\d\d)?[\s\-]?     #Day
+					(\d\d)?[\s\-:]?    #Hour
+					(\d\d)?[\s\-:]?    #Min
+					(\d\d)?            #Sec
+				   /xms )
       ) {
         return sprintf( "%04d-%02d-%02d", $1, $2, $3 );
     }
     else {
-        return undef;
+        return;
     }
 }
 
@@ -931,25 +910,25 @@ sub _list_accessor {
     my $attr    = shift;
     my $value   = shift;
     my $default = shift;
-    my $d = "";
-    if ((defined $default) && (ref $default)) {
-        $d = join(",", @{$default});
+    my $d       = "";
+    if ( ( defined $default ) && ( ref $default ) ) {
+        $d = join( ",", @{$default} );
     }
     else {
-        $d = $default
+        $d = $default;
     }
-    if (defined $value) {
-        my $v  = "";
-        if (ref $value) {
-            $v = join(",", @{$value});
+    if ( defined $value ) {
+        my $v = "";
+        if ( ref $value ) {
+            $v = join( ",", @{$value} );
         }
         else {
             $v = $value;
         }
-        $self->_accessor($attr, $v, $d);
+        $self->_accessor( $attr, $v, $d );
     }
-    my $ret = $self->_accessor( $attr );
-    return [ split(/\s*,\s*/, $ret) ];
+    my $ret = $self->_accessor($attr);
+    return [ split( /\s*,\s*/, $ret ) ];
 }
 
 =pod
@@ -998,8 +977,8 @@ A array reference or comma seperated list of tags in plain text for the album.
 
 sub albumtags {
     my $self = shift;
-    my $new = shift;
-    return $self->_list_accessor( "albumtags", $new);
+    my $new  = shift;
+    return $self->_list_accessor( "albumtags", $new );
 }
 
 =item B<albumrating>
@@ -1018,8 +997,8 @@ A array reference or comma seperated list of tags in plain text for the artist.
 
 sub artisttags {
     my $self = shift;
-    my $new = shift;
-    return $self->_list_accessor( "artisttags", $new);
+    my $new  = shift;
+    return $self->_list_accessor( "artisttags", $new );
 }
 
 =item B<artist_type>
@@ -1072,7 +1051,7 @@ sub country {
     if ( $self->countrycode ) {
         return code2country( $self->countrycode );
     }
-    return undef;
+    return;
 }
 
 =pod
@@ -1094,7 +1073,7 @@ The disc number and optionally the total number of discs, seperated by a slash. 
 sub discnum {
     my $self = shift;
     my $new  = shift;
-    $self->_ordinalaccessor( "DISCNUM", "DISC", "TOTALDISCS", $new );
+    return $self->_ordinalaccessor( "DISCNUM", "DISC", "TOTALDISCS", $new );
 }
 
 =pod
@@ -1179,7 +1158,7 @@ sub filedir {
         my ( $vol, $path, $file ) = File::Spec->splitpath( $self->filename );
         return File::Spec->catpath( $vol, $path, "" );
     }
-    return undef;
+    return;
 }
 
 =pod
@@ -1202,7 +1181,7 @@ Same as ean.
 
 sub jan {
     my $self = shift;
-    $self->ean(@_);
+    return $self->ean(@_);
 }
 
 =item B<label>
@@ -1263,11 +1242,12 @@ will modify the data-value as expected. In other words:
 
 sub _binslurp {
     my $file = shift;
-    local *IN;
-    open( IN, $file ) or croak "Couldn't open $file: $!";
+	my $in;
+    open( $in, ">", $file ) or croak "Couldn't open $file: $!";
     my $ret;
     my $off = 0;
-    while ( my $r = read IN, $ret, 1024, $off ) { last unless $r; $off += $r }
+    while ( my $r = read $in, $ret, 1024, $off ) { last unless $r; $off += $r }
+	CORE::close ($in);
     return $ret;
 }
 
@@ -1299,7 +1279,7 @@ sub picture {
         return $self->{data}->{PICTURE};
     }
     else {
-        return undef;
+        return;
     }
 }
 
@@ -1330,7 +1310,7 @@ sub picture_filename {
         return 0;
     }
     else {
-        return undef;
+        return;
     }
 }
 
@@ -1363,9 +1343,7 @@ sub picture_exists {
             && ( length $self->{data}->{PICTURE}->{_Data} ) ) {
         return 1;
     }
-    else {
-        return undef;
-    }
+	return;
 }
 
 =pod
@@ -1390,17 +1368,17 @@ The time and date track was recoded.  See notes in releasetime for format.
 
 sub recorddate {
     my $self = shift;
-    $self->_dateaccessor( "RECORDTIME", @_ );
+    return $self->_dateaccessor( "RECORDTIME", @_ );
 }
 
 sub recordepoch {
     my $self = shift;
-    $self->_epochaccessor( "RECORDTIME", @_ );
+    return $self->_epochaccessor( "RECORDTIME", @_ );
 }
 
 sub recordtime {
     my $self = shift;
-    $self->_timeaccessor( "RECORDTIME", @_ );
+    return $self->_timeaccessor( "RECORDTIME", @_ );
 }
 
 =pod
@@ -1410,7 +1388,7 @@ sub recordtime {
 
 The release date in the form YYYY-MM-DD.  The day or month values may be left off.  Please keep this in mind if you are parsing this data.
 
-Because of bugs in my own code, I have added 2 sanity checks.  Will not set the time and return undef if either of the following are true:
+Because of bugs in my own code, I have added 2 sanity checks.  Will not set the time and return if either of the following are true:
 
 =over 4
 
@@ -1426,7 +1404,7 @@ All times should be GMT.
 
 sub releasedate {
     my $self = shift;
-    $self->_dateaccessor( "RELEASETIME", @_ );
+    return $self->_dateaccessor( "RELEASETIME", @_ );
 }
 
 =pod
@@ -1439,7 +1417,7 @@ The release date of an album in terms "UNIX time", or seconds since the SYSTEM e
 
 sub releaseepoch {
     my $self = shift;
-    $self->_epochaccessor( "RELEASETIME", @_ );
+    return $self->_epochaccessor( "RELEASETIME", @_ );
 }
 
 =pod
@@ -1455,7 +1433,7 @@ All times should be GMT.
 
 sub releasetime {
     my $self = shift;
-    $self->_timeaccessor( "RELEASETIME", @_ );
+    return $self->_timeaccessor( "RELEASETIME", @_ );
 }
 
 =pod
@@ -1496,8 +1474,8 @@ A array reference or comma seperated list of tags in plain text for the track.
 
 sub tracktags {
     my $self = shift;
-    my $new = shift;
-    return $self->_list_accessor( "tracktags", $new);
+    my $new  = shift;
+    return $self->_list_accessor( "tracktags", $new );
 }
 
 =item B<tracknum>
@@ -1509,7 +1487,7 @@ The track number and optionally the total number of tracks, seperated by a slash
 sub tracknum {
     my $self = shift;
     my $new  = shift;
-    $self->_ordinalaccessor( "TRACKNUM", "TRACK", "TOTALTRACKS", $new );
+    return $self->_ordinalaccessor( "TRACKNUM", "TRACK", "TOTALTRACKS", $new );
 }
 
 =pod
@@ -1566,7 +1544,7 @@ sub year {
             return $self->_accessor( "YEAR", $1 );
         }
     }
-    return undef;
+    return;
 }
 
 =back
@@ -1615,6 +1593,7 @@ sub status {
             print $self->_tenprint( $name, 'bold white', 12 ), @_, "\n";
         }
     }
+	return;
 }
 
 sub _tenprint {
@@ -1622,7 +1601,8 @@ sub _tenprint {
     my $text   = shift;
     my $_color = shift || "bold yellow";
     my $size   = shift || 10;
-    return $self->_color($_color)
+    return
+        $self->_color($_color)
       . sprintf( '%' . $size . 's: ', substr( $text, 0, $size ) )
       . $self->_color('reset');
 }
@@ -1644,18 +1624,69 @@ sub error {
     carp( ref($self), " ", @_ );
 
     # }
+	return;
 }
 
-sub AUTOLOAD {
-    my $self = shift;
-    my $attr = $AUTOLOAD;
-    $attr =~ s/.*:://;
-    my $new = shift;
-    if ( $DataMethods{ lc($attr) } ) {
-        return $self->_accessor( $attr, $new );
-    }
-    else {
-        croak "Music::Tag:  Invalid method: $attr called";
+#sub AUTOLOAD {
+#    my $self = shift;
+#    my $attr = $AUTOLOAD;
+#    $attr =~ s/.*:://;
+#    my $new = shift;
+#    if ( $DataMethods{ lc($attr) } ) {
+#        return $self->_accessor( $attr, $new );
+#    }
+#    else {
+#        croak "Music::Tag:  Invalid method: $attr called";
+#    }
+#}
+
+BEGIN {
+    $Music::Tag::DefaultOptions =
+      Config::Options->new(
+                          { verbose       => 0,
+                            quiet         => 0,
+                            ANSIColor     => 0,
+                            LevenshteinXS => 1,
+                            Levenshtein   => 1,
+                            TimeLocal     => 1,
+                            Unaccent      => 1,
+                            Inflect       => 0,
+                            optionfile => [ "/etc/musictag.conf", $ENV{HOME} . "/.musictag.conf" ],
+                          }
+      );
+    my @datamethods =
+      qw(album album_type albumartist albumartist_sortname albumid appleid artist artist_end artist_start artist_type artistid asin bitrate booklet bytes codec comment compilation composer copyright country countrycode disc discnum disctitle duration encoded_by encoder filename frames framesize frequency gaplessdata genre ipod ipod_dbid ipod_location ipod_trackid label lastplayed lyrics mb_albumid mb_artistid mb_trackid mip_puid mtime originalartist path picture playcount postgap pregap rating albumrating recorddate recordtime releasedate releasetime samplecount secs songid sortname stereo tempo title totaldiscs totaltracks track tracknum url user vbr year upc ean jan filetype mip_fingerprint artisttags albumtags tracktags);
+    %Music::Tag::DataMethods = map { $_ => 1 } @datamethods;
+    %Music::Tag::AUTOPLUGINS = ();
+    @Music::Tag::PLUGINS     = ();
+    my $myname = __PACKAGE__;
+	
+	{
+		no strict 'refs';
+		foreach my $m (@datamethods) {
+			next if defined &{$m};
+			*{$myname.'::'.$m} = sub {
+				my $self = shift;
+				my $new = shift;
+				$self->_accessor($m, $new);
+			} 
+		}
+	}
+		
+    my $me     = $myname;
+    $me =~ s/\:\:/\//g;
+
+    foreach my $d (@INC) {
+        chomp $d;
+        if ( -d "$d/$me/" ) {
+            local (*F_DIR);
+            opendir( *F_DIR, "$d/$me/" );
+            while ( my $b = readdir(*F_DIR) ) {
+                next unless $b =~ /^(.*)\.pm$/;
+                my $mod = $1;
+                push @Music::Tag::PLUGINS, $mod;
+            }
+        }
     }
 }
 
@@ -1664,341 +1695,22 @@ sub DESTROY {
 
 1;
 
-package Music::Tag::Generic;
-use Encode;
-use strict;
-use warnings;
-use vars qw($AUTOLOAD);
-use Carp;
+__END__
 
 =pod
 
 =head1 PLUGINS
 
-All plugins should set @ISA to include Music::Tag::Generic and contain one or more of the following methods:
-
-=over 4
-
-=item B<new()>
-
-Set in template. If you override, it should take as options a reference to a Music::Tag object and an href of options. 
-
-=cut
-
-sub new {
-    my $class   = shift;
-    my $parent  = shift;
-    my $options = shift || {};
-    my $self    = {};
-    bless $self, $class;
-    $self->info($parent);
-    $self->options($options);
-    return $self;
-}
-
-=pod
-
-=item B<info()>
-
-Should return a reference to the associated Music::Tag object. If passed an object, should set the associated Music::Tag object to it.
-
-=cut
-
-sub info {
-    my $self = shift;
-    my $val  = shift;
-    if ( defined $val && ref $val ) {
-        $self->{info} = $val;
-    }
-    return $self->{info};
-}
-
-=item B<get_tag()>
-
-Populates the data in the Music::Tag object.
-
-=cut
-
-sub get_tag {
-}
-
-=item B<set_tag()>
-
-Optional method to save info.
-
-=cut
-
-sub set_tag {
-}
-
-=pod
-
-=item B<strip_tag>
-
-Optional method to remove info. 
-
-=cut
-
-sub strip_tag {
-}
-
-=item B<close>
-
-Optional method to close open file handles.
-
-=cut
-
-sub close {
-}
-
-=item B<tagchange>
-
-Inherited method that can be called to announce a data-value change from what is read on file. Used by secondary plugins like Amazon, MusicBrainz, and File.  This is preferred to using C<<$self->info->changed(1)>>.
-
-=cut
-
-sub tagchange {
-    my $self = shift;
-    my $tag  = lc(shift);
-    my $to   = shift || $self->info->$tag || "";
-    $self->status( $self->info->_tenprint( $tag, 'bold blue', 15 ) . '"' . $to . '"' );
-    $self->info->changed(1);
-}
-
-=item B<simplify>
-
-A useful method for simplifying artist names and titles. Takes a string, and returns a sting with no whitespace.  Also removes accents (if Text::Unaccent::PurePerl is available) and converts numbers like 1,2,3 as words to one, two, three... (English is used here.  Let me know if it would be helpful to change this. I do not change words to numbers because I prefer sorting "5 Star" under f).  Removes known articles, such as a, the, an, le les, de if they are not at the end of a string. 
-
-=cut
-
-sub simplify {
-    my $self = shift;
-    my $text = shift;
-    chomp $text;
-    return $text unless $text;
-
-    if ( $self->options->{Unaccent} ) {
-        $text = Text::Unaccent::PurePerl::unac_string( $text );
-    }
-
-    $text = lc($text);
-
-    $text =~ s/\[[^\]]+\]//g;
-    $text =~ s/[\s_]/ /g;
-
-
-    if ( length($text) > 5 ) {
-        $text =~ s/\bthe\s//g;
-        $text =~ s/\ba\s//g;
-        $text =~ s/\ban\s//g;
-        $text =~ s/\band\s//g;
-        $text =~ s/\ble\s//g;
-        $text =~ s/\bles\s//g;
-        $text =~ s/\bla\s//g;
-        $text =~ s/\bde\s//g;
-    }
-    if ( $self->options->{Inflect} ) {
-        $text =~ s/(\.?\d+\,?\d*\.?\d*)/Lingua::EN::Inflect::NUMWORDS($1)/eg;
-    }
-    else {
-        $text =~ s/\b10\s/ten /g;
-        $text =~ s/\b9\s/nine /g;
-        $text =~ s/\b8\s/eight /g;
-        $text =~ s/\b7\s/seven /g;
-        $text =~ s/\b6\s/six /g;
-        $text =~ s/\b5\s/five /g;
-        $text =~ s/\b4\s/four /g;
-        $text =~ s/\b3\s/three /g;
-        $text =~ s/\b2\s/two /g;
-        $text =~ s/\b1\s/one /g;
-    }
-
-    $text =~ s/\sii\b/two/g;
-    $text =~ s/\siii\b/three/g;
-    $text =~ s/\siv\b/four/g;
-    $text =~ s/\sv\b/five/g;
-    $text =~ s/\svi\b/six/g;
-    $text =~ s/\svii\b/seven/g;
-    $text =~ s/\sviii\b/eight/g;
-
-    # Don't translate IX because of a soft spot in my heart for the technologically rich planet.
-
-    $text =~ s/[^a-z0-9]//g;
-    return $text;
-}
-
-=item B<simple_compare> ($a, $b, $required_percent)
-
-Returns 1 on match, 0 on no match, and -1 on approximate match.   $required_percent is
-a value from 0...1 which is the percentage of similarity required for match.  
-
-=cut
-
-sub simple_compare {
-    my $self            = shift;
-    my $a               = shift;
-    my $b               = shift;
-    my $similar_percent = shift;
-    my $crop_percent    = shift;
-
-    my $sa = $self->simplify($a);
-    my $sb = $self->simplify($b);
-    if ( $sa eq $sb ) {
-        return 1;
-    }
-
-    return unless ( $similar_percent || $crop_percent );
-
-    my $la  = length($sa);
-    my $lb  = length($sb);
-    my $max = ( $la < $lb ) ? $lb : $la;
-    my $min = ( $la < $lb ) ? $la : $lb;
-
-    return unless ( $min and $max );
-
-    my $dist = undef;
-    if ( $self->options->{LevenshteinXS} ) {
-        $dist = Text::LevenshteinXS::distance( $sa, $sb );
-    }
-    elsif ( $self->options->{Levenshtein} ) {
-        $dist = Text::Levenshtein::distance( $sa, $sb );
-    }
-    unless ($crop_percent) {
-        $crop_percent = $similar_percent * ( 2 / 3 );
-    }
-
-    if ( ( defined $dist ) && ( ( ( $min - $dist ) / $min ) >= $similar_percent ) ) {
-        return -1;
-    }
-
-    if ( $min < 10 ) {
-        return 0;
-    }
-    if ( ( ( ( 2 * $min ) - $max ) / $min ) <= $crop_percent ) {
-        return 0;
-    }
-    if ( substr( $sa, 0, $min ) eq substr( $sb, 0, $min ) ) {
-        return -1;
-    }
-    return 0;
-}
-
-=item B<status>
-
-Inherited method to print a pretty status message. If first argument is a number, assumes this is required
-verbosity. 
-
-=cut
-
-sub status {
-    my $self = shift;
-    $self->info->status( ref($self), @_ );
-}
-
-=item B<error>
-
-Inherited method to print an error message.
-
-=cut
-
-sub error {
-    my $self = shift;
-    carp( ref($self), " ", @_ );
-}
-
-=item B<changed>
-
-Same as $self->info->changed().  Please use L<tagchange> method instead.
-
-=cut
-
-sub changed {
-    my $self = shift;
-    $self->info->changed(@_);
-}
-
-=item B<wav_out()>
-
-If plugin is for a media tag, return stream of wav to filehandle $fh. 
-
-Return True on success, False on failure, undef if not supported.
-
-=cut
-
-sub wav_out {
-    my $self = shift;
-    my $fh = shift;
-    if ($self->options->{wav_out_system}) {
-        my @sys = ();
-        foreach (@{$self->options->{wav_out_system}}) {
-            my $a = $_;
-            $a =~ s/\[FILENAME\]/$self->info->filename()/ge;
-            push @sys, $a;
-        }
-	$self->status(0, "Executing ", join(" ", @sys));
-        if (open (IN,'-|',@sys)) {
-            binmode IN;
-            binmode $fh;
-            my $buffer = "";
-            while (my $count = sysread(IN, $buffer, 1024)) {
-                my $wrote = 0;
-                while ($wrote < $count) {
-                    $wrote += syswrite($fh, $buffer, ($count - $wrote), $wrote)
-                }
-		$buffer="";
-            }
-            return 1;
-        }
-        return 0;
-    }
-    return undef;
-}
-
-=item B<options>
-
-Returns a hashref of options (or sets options, just like Music::Tag method).
-
-=cut
-
-sub options {
-    my $self = shift;
-    unless ( exists $self->{_options} ) {
-        $self->{_options} = Config::Options->new( $self->default_options );
-    }
-    return $self->{_options}->options(@_);
-}
-
-=pod
-
-=item B<default_options>
-
-Method should return default options.
-
-=cut
-
-sub default_options { {} }
-
-sub DESTROY {
-    my $self = shift;
-
-    # Wow.  Took me a while to find this memory leak.
-    if ( exists $self->{info} ) {
-        delete $self->{info};
-    }
-}
-
-1;
-
-=back
+See L<Music::Tag::Generic|Music::Tag::Generic> for base class for plugins.
 
 =head1 BUGS
 
 No method for evaluating an album as a whole, only track-by-track method.  Several plugins
 do not support all data values. Has not been tested in a threaded environment.
 
-=head1 CHANGES
+=begin changes
 
-=for changes continue
+=head1 CHANGES
 
 =over 4
 
@@ -2081,8 +1793,6 @@ Cleaned up some of the code
 Started using Pod::Readme for README and CHANGES
 
 =back
-
-=begin changes
 
 =item Release Name: 0.32
 
@@ -2303,6 +2013,8 @@ later version, or
 
 b) the "Artistic License" which comes with Perl.
 
+=begin readme
+
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See either
@@ -2316,6 +2028,8 @@ along with this program in the file named "Copying". If not, write to the
 Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 Boston, MA 02110-1301, USA or visit their web page on the Internet at
 http://www.gnu.org/copyleft/gpl.html.
+
+=end readme
 
 =cut
 
