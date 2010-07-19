@@ -1,3 +1,7 @@
+Release Name: 0.32
+============================
+* Fixed critical bug with Term::ANSIColor
+
 Release Name: 0.31
 ============================
 * Added example

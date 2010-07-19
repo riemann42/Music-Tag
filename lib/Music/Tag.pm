@@ -1,5 +1,5 @@
 package Music::Tag;
-our $VERSION = 0.31;
+our $VERSION = 0.32;
 
 # Copyright (c) 2007,2008 Edward Allen III. Some rights reserved.
 #
@@ -1374,7 +1374,7 @@ sub _tenprint {
 sub _color {
     my $self = shift;
     if ( $self->options->{ANSIColor} ) {
-        return Term::ANSIColor::_color(@_);
+        return Term::ANSIColor::color(@_);
     }
     else {
         return "";

@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Music-Tag
-version:             0.31
+version:             0.32
 abstract:            Module for collecting information about music files.
 license:             perl
 author:              
