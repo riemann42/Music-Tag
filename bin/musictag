@@ -63,7 +63,7 @@ our $clopts = [
        "Choose a preset list of options.  See longhelp for details."
     ],
     [  "plugin=s@" => $cloptions->{plugins},
-       "Specifiy a plugin to add (input and outpout). "
+       "Specify a plugin to add (input and outpout). "
          . "Plugin options can be expressed in the form option=value"
     ],
     [  "outputplugin=s@" => $cloptions->{outputplugins},
@@ -73,7 +73,7 @@ our $clopts = [
        "Specify an input plugin."
     ],
     [  "pluginoption=s%" => $cloptions,
-       "Specifiy additional options for all plugins."
+       "Specify additional options for all plugins."
     ],
     [  "nochange" => \$cloptions->{nochange},
        "Do not add default plugin to outputplugins."
@@ -567,7 +567,7 @@ Is the equivalent of --plugin="File,MusicBrainz" --move=1 --dest="."
 
 =item --plugin
 
-Specifiy a plugin to add (input and outpout). Plugin options can be expressed in the form option=value.  For example, to use Amazon with the German store, try
+Specify a plugin to add (input and outpout). Plugin options can be expressed in the form option=value.  For example, to use Amazon with the German store, try
 
 	--plugin="Amazon:Locale=de"
 
@@ -584,7 +584,7 @@ Specify an input plugin.  This is like --outputplugin for input.
 
 =item --pluginoption=s%
 
-Specifiy additional options for all plugins.  These optons are specified in key-value form.  For example
+Specify additional options for all plugins.  These optons are specified in key-value form.  For example
 
 	--plugin="Amazon,MusicBrainz" --pluginoptions="trust_title=1"
 
@@ -612,12 +612,12 @@ Trust total number of tracks.  Used by MusicBrainz and Amazon plugins.
 
 =item --striptags
 
-Remove tag from file before writing new tag.  Only used by MP3::Tag at the moment.  Usefull to convert from id3v2.4 to id3v2.3 or to clean up cruft
+Remove tag from file before writing new tag.  Only used by MP3::Tag at the moment.  Useful to convert from id3v2.4 to id3v2.3 or to clean up cruft
 from tags.
 
 =item --safe
 
-Do not change artist, album, title, and track number.  Usefull if all you want is a cover, and don't want to risk changing these.
+Do not change artist, album, title, and track number.  Useful if all you want is a cover, and don't want to risk changing these.
 
 =item --verbose
 
@@ -649,7 +649,7 @@ Resave tag no matter what.
 
 =item --printinfo
 
-Dump raw tag info to stdout.  Very usefull.
+Dump raw tag info to stdout.  Very useful.
 
 =item --getinfo=s
 

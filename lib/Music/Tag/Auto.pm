@@ -77,6 +77,7 @@ sub new {
 		unless ( $plugin =~ /::/ ) {
 			$plugin = "Music::Tag::" . $plugin;
 		}
+		$self->status(1, "Auto loading plugin: $plugin");
 		if($self->info->_has_module($plugin)) {
 			return $plugin->new( $self->info, $self->options );
 		}

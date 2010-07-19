@@ -1,90 +1,100 @@
-Music::Tag version 0.28
-============================
+NAME
+    Music::Tag - Interface for collecting information about music files.
 
-Extendable module for working with Music Tags. Music::Tag Is powered by 
-various plugins that collect data about a song based on whatever information
-has already been discovered.  
+DESCRIPTION
+    Extendable module for working with Music Tags. Music::Tag Is powered by
+    various plugins that collect data about a song based on whatever
+    information has already been discovered.
 
-Note:  As of version 0.28, Music-Tag is distributed as seperate packages.
+    The motivation behind this was to provide a convenient method for fixing
+    broken tags in music files. This developed into a universal interface to
+    various music file tagging schemes and a convenient way to augment this
+    from online databases.
 
-The following plugins are available:
-
-Music::Tag::MP3 - Info from MP3 Header. Uses MP3::Info 
-Music::Tag::M4A - Info from M4A or M4P Header. Uses M4P::Info and Audio::M4P::QuickTime
-Music::Tag::FLAC - Info from FLAC Header. Uses Audio::FLAC::Header
-Music::Tag::OGG - Info from OGG Header. Uses Ogg::Vorbis::Header::PurePerl
-Music::Tag::File - Info based on filename
-Music::Tag::MusicBrainz - Info from MusicBrainz site. Uses WebService::MusicBrainz
-Music::Tag::Amazon - Info from Amazon site. Uses Net::Amazon
-Music::Tag::Lyrics - Quick and dirty lyric search. 
-Music::Tag::LyricsFetcher - Module for fetching lyrics using Lyric::Fetcher (will replace M:T:L)
+    Several plugin modules to find information about a music file and write
+    it back into the tag are available. These modules will use available
+    information (REQUIRED DATA VALUES and USED DATA VALUES) and set various
+    data values back to the tag.
 
 INSTALLATION
+    To install this module type the following:
 
-To install this module type the following:
+       perl Makefile.PL
+       make
+       make test
+       make install
 
-   perl Makefile.PL
-   make
-   make test
-   make install
+  IMPORTANT NOTE
 
-IMPORTANT NOTE
+    If you have installed older versions (older than .25) PLEASE delete the
+    following scripts from your bin folder: autotag, safetag, quicktag,
+    musicsort, musicinfo.
 
-If you have installed older versions (older than .25) PLEASE delete the 
-following scripts from your bin folder:
-   autotag 
-   safetag 
-   quicktag 
-   musicsort 
-   musicinfo.  
-If you used any of these scripts, create a symbolic link to musictag for each.
+    If you used any of these scripts, create a symbolic link to musictag for
+    each.
 
-QUICK INSTALL OF ALL PACKAGES
+  QUICK INSTALL OF ALL PACKAGES
 
-A bundle is available to quickly install Music::Tag with all plugins. To
-install it use:
+    A bundle is available to quickly install Music::Tag with all plugins. To
+    install it use:
 
-   perl -MCPAN -eshell
+       perl -MCPAN -eshell
 
-At the cpan shell prompt type:
+    At the cpan shell prompt type:
 
-   install Bundle::Music::Tag
+       install Bundle::Music::Tag
 
 DEPENDENCIES
+    This module requires these other modules and libraries:
 
-This module requires these other modules and libraries:
+       Encode
+       File::Spec
+       Locale::Country
+       Digest::SHA1
+       Config::Options
 
-   Encode
-   File::Spec
-   Locale::Country
-   Digest::SHA1
-   Config::Options
+    I strongly recommend the following to improve web searches:
 
-I strongly recommend the following to improve web searches:
+       Lingua::EN::Inflect
+       Lingua::Stem
+       Text::LevenshteinXS
+       Text::Unaccent 
 
-   Lingua::EN::Inflect
-   Lingua::Stem
-   Text::LevenshteinXS
-   Text::Unaccent 
+    The following just makes things pretty:
 
-The following just makes things pretty:
-
-   Term::ANSIColor
+       Term::ANSIColor
 
 EXECUTABLE SCRIPT
+    An executable script, musictag is allows quick tagging of MP3 files. To
+    learn more, use:
 
-musictag is a script which allows quick tagging of MP3 files.  To learn more, use:
+       musictag --help 
+       musictag --longhelp
 
-   musictag --help 
-   musictag --longhelp
+AUTHOR
+    Edward Allen III <ealleniii _at_ cpan _dot_ org>
 
+LICENSE
+    This program is free software; you can redistribute it and/or modify it
+    under the terms of the Artistic License, distributed with Perl.
 
-COPYRIGHT AND LICENCE
+COPYRIGHT
+    Copyright (c) 2007,2008 Edward Allen III. Some rights reserved.
 
-Copyright (C) 2007 Edward J. Allen III
-ealleniii _at_ cpan _dot_ org
+SEE ALSO
+    Music::Tag::Amazon, Music::Tag::File, Music::Tag::FLAC,
+    Music::Tag::Lyrics, Music::Tag::LyricsFetcher, Music::Tag::M4A,
+    Music::Tag::MP3, Music::Tag::MusicBrainz, Music::Tag::OGG,
+    Music::Tag::Option, Term::ANSIColor, Text::LevenshteinXS,
+    Text::Unaccent, Lingua::EN::Inflect, Lingua::Stem
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.8.7 or,
-at your option, any later version of Perl 5 you may have available.
+AUTHOR
+    Edward Allen III <ealleniii _at_ cpan _dot_ org>
+
+LICENSE
+    This program is free software; you can redistribute it and/or modify it
+    under the terms of the Artistic License, distributed with Perl.
+
+COPYRIGHT
+    Copyright (c) 2007,2008 Edward Allen III. Some rights reserved.
 

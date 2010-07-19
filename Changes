@@ -1,3 +1,11 @@
+Release Name: 0.33
+============================
+* Revised POD (thanks Ivan Tubert-Brohman fo Test::Spelling!)
+* Added the ability for plugins to set a verbosity level with status method
+* Added datamethods upc and ean with value checking. Sets one if other is set.
+* Cleaned up some of the code
+* Used Pod::Readme
+
 Release Name: 0.32
 ============================
 * Fixed critical bug with Term::ANSIColor

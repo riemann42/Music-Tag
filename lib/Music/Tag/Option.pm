@@ -31,7 +31,7 @@ Music::Tag::Option - Plugin module for Music::Tag to set tags via tag optons
 
 =head1 DESCRIPTION
 
-Music::Tag::Option is a plugin to set tags via the plugin option mechanisim.
+Music::Tag::Option is a plugin to set tags via the plugin option.
 
 =head1 REQUIRED VALUES
 
