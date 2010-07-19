@@ -57,7 +57,7 @@ sub set_tag {
     my $okmethods = { map { lc($_) => 1 } @{ $self->info->datamethods } };
     while ( my ( $k, $v ) = each %{ $self->options } ) {
         if ( ( defined $v ) and ( $okmethods->{ lc($k) } ) ) {
-            my $method = uc($k);
+            my $method = lc($k);
             $self->info->$method($v);
             $self->tagchange($method);
         }

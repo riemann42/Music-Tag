@@ -621,7 +621,7 @@ sub sha1 {
     return unless ( ( $self->filename ) && ( -e $self->filename ) );
     my $maxsize = 4 * 4096;
 	my $in;
-    open( $in, "<", $self->filename ) or die "Bad file: $self->filename\n";
+    open( $in, '<', $self->filename ) or die "Bad file: $self->filename\n";
     my @stat = stat $self->filename;
     my $sha1 = Digest::SHA1->new();
     $sha1->add( pack( "V", $stat[7] ) );
@@ -654,8 +654,9 @@ Returns an array reference of all data methods supported.  Optionally takes a me
 
 sub datamethods {
     my $self = shift;
-    my $new  = shift;
-    if ($new) {
+    my $add  = shift;
+    if ($add) {
+		my $new = lc($add);
         $DataMethods{$new} = 1;
 		{
 			no strict 'refs';
@@ -723,7 +724,9 @@ sub wav_out {
 
 =head2 Data Access Methods
 
-These methods are used to access the Music::Tag data values. Not all methods are supported by all plugins. In fact, no single plugin supports all methods (yet). Each of these is an accessor function. If you pass it a value, it will set the variable. It always returns the value of the variable. It can return.
+These methods are used to access the Music::Tag data values. Not all methods are supported by all plugins. In fact, no single plugin supports all methods (yet). Each of these is an accessor function. If you pass it a value, it will set the variable. It always returns the value of the variable.
+
+Please note that an undefined function will return undef.  This means that in list context, it will be true even when empty.  This behavior may change, however, so don't rely on it.
 
 =cut
 
@@ -875,7 +878,7 @@ sub _dateaccessor {
         return sprintf( "%04d-%02d-%02d", $1, $2, $3 );
     }
     else {
-        return;
+        return undef;  # I know this is not PBP.  Deal.
     }
 }
 
@@ -1051,7 +1054,7 @@ sub country {
     if ( $self->countrycode ) {
         return code2country( $self->countrycode );
     }
-    return;
+    return undef;
 }
 
 =pod
@@ -1158,7 +1161,7 @@ sub filedir {
         my ( $vol, $path, $file ) = File::Spec->splitpath( $self->filename );
         return File::Spec->catpath( $vol, $path, "" );
     }
-    return;
+    return undef;
 }
 
 =pod
@@ -1243,7 +1246,7 @@ will modify the data-value as expected. In other words:
 sub _binslurp {
     my $file = shift;
 	my $in;
-    open( $in, ">", $file ) or croak "Couldn't open $file: $!";
+    open( $in, '<', $file ) or croak "Couldn't open $file: $!";
     my $ret;
     my $off = 0;
     while ( my $r = read $in, $ret, 1024, $off ) { last unless $r; $off += $r }
@@ -1279,7 +1282,7 @@ sub picture {
         return $self->{data}->{PICTURE};
     }
     else {
-        return;
+        return undef;
     }
 }
 
@@ -1310,7 +1313,7 @@ sub picture_filename {
         return 0;
     }
     else {
-        return;
+        return undef;
     }
 }
 
@@ -1343,7 +1346,7 @@ sub picture_exists {
             && ( length $self->{data}->{PICTURE}->{_Data} ) ) {
         return 1;
     }
-	return;
+	return undef;
 }
 
 =pod
@@ -1544,7 +1547,7 @@ sub year {
             return $self->_accessor( "YEAR", $1 );
         }
     }
-    return;
+    return undef;
 }
 
 =back
@@ -1980,9 +1983,9 @@ Revised MP3 Tags to read Picard tags
 
 Initial Public Release
 
-=end changes
-
 =back
+
+=end changes
 
 =for changes stop
 
