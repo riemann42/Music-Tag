@@ -1,3 +1,8 @@
+Release Name: 0.31
+============================
+* Added example
+* Added used_datamethods method
+
 Release Name: 0.30
 ============================
 * Config::Options .07 now required 

@@ -1,5 +1,5 @@
 package Music::Tag;
-our $VERSION = 0.30;
+our $VERSION = 0.31;
 
 # Copyright (c) 2007,2008 Edward Allen III. Some rights reserved.
 #
@@ -221,6 +221,12 @@ sub available_plugins {
 	}
 	return @Music::Tag::PLUGINS;
 }
+
+=item B<default_options()>
+
+Returns default options 
+
+=cut
 		
 sub default_options {
     my $self = shift;
@@ -616,6 +622,30 @@ sub datamethods {
 }
 
 =pod
+
+=item B<used_datamethods()>
+
+Returns an array reference of all data methods that will not return undef.
+
+=cut
+
+sub used_datamethods {
+	my $self = shift;
+	my @ret = ();
+	foreach my $m (@{$self->datamethods}) {
+		if ($m eq "picture") {
+			if ($self->picture_exists) {
+				push @ret, $m 
+			}
+		}
+		else {
+			if (defined $self->$m) {
+				push @ret, $m
+			}
+		}
+	}
+	return \@ret;
+}
 
 =back
 
@@ -1379,6 +1409,7 @@ sub DESTROY {
 package Music::Tag::Generic;
 use Encode;
 use strict;
+use warnings;
 use vars qw($AUTOLOAD);
 use Carp;
 
@@ -1539,7 +1570,14 @@ sub simplify {
     return $text;
 }
 
-# similar_percent is a precent, so should be open set (0..1)
+=item B<simple_compare> ($a, $b, $required_percent)
+
+Returns 1 on match, 0 on no match, and -1 on approximate match.   $required_percent is
+a value from 0...1 which is the percentage of similarity.  $crop_percent provides some
+vodoo to allow longer strings to have some leeway on the match. 
+
+=cut
+
 sub simple_compare {
     my $self            = shift;
     my $a               = shift;

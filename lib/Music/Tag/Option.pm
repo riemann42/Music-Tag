@@ -46,6 +46,8 @@ None.
 =cut
 
 use strict;
+use warnings;
+
 our @ISA = qw(Music::Tag::Generic);
 
 sub set_tag {

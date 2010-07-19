@@ -1,5 +1,6 @@
 bin/musictag
 Changes
+eg/printinfo.pl
 lib/Music/Tag.pm
 lib/Music/Tag/Auto.pm
 lib/Music/Tag/Option.pm
