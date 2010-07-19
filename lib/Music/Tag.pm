@@ -135,7 +135,7 @@ use Config::Options;
 use Digest::SHA1;
 use Music::Tag::Generic;
 use utf8;
-use vars qw($AUTOLOAD %DataMethods);
+use vars qw(%DataMethods);
 
 =for readme stop
 
@@ -810,7 +810,13 @@ sub _timeaccessor {
 
     if ( defined $value ) {
         if ( $value =~
-             /^(\d\d\d\d)[ \-]?(\d\d)?[ \-]?(\d\d)?[ \-]?(\d\d)?[ \-:]?(\d\d)?[ \-:]?(\d\d)?/ ) {
+                  /^(\d\d\d\d)[\s\-]?  #Year
+			        (\d\d)?[\s\-]?     #Month
+					(\d\d)?[\s\-]?     #Day
+					(\d\d)?[\s\-:]?    #Hour
+					(\d\d)?[\s\-:]?    #Min
+					(\d\d)?            #Sec
+				   /xms ) {
             $value = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
                               $1, $2 || 1, $3 || 1, $4 || 12, $5 || 0, $6 || 0 );
             if (    ( $1 == 0 )
@@ -846,7 +852,13 @@ sub _epochaccessor {
     my $ret = undef;
     if ( ( defined $v )
         && (
-            $v =~ /^(\d\d\d\d)[ \-]?(\d\d)?[ \-]?(\d\d)?[ \-]?(\d\d)?[ \-:]?(\d\d)?[ \-:]?(\d\d)?/ )
+            $v =~ /^(\d\d\d\d)[\s\-]?  #Year
+			        (\d\d)?[\s\-]?     #Month
+					(\d\d)?[\s\-]?     #Day
+					(\d\d)?[\s\-:]?    #Hour
+					(\d\d)?[\s\-:]?    #Min
+					(\d\d)?            #Sec
+				   /xms )
       ) {
         eval { $ret = Time::Local::gmtime( $6 || 0, $5 || 0, $4 || 12, $3 || 1, $2 || 0, $1 ); };
         $self->error($@) if $@;
@@ -897,7 +909,7 @@ sub _ordinalaccessor {
             $r .= $t;
         }
         if ($tt) {
-            $self->_accessor( $total, $t );
+            $self->_accessor( $total, $tt );
             $r .= "/" . $tt;
         }
     }
@@ -1058,6 +1070,12 @@ sub country {
 }
 
 =pod
+
+=item B<countrycode>
+
+The two digit country code.  Sets country (and is set by country)
+
+=cut
 
 =item B<disc>
 
@@ -1427,7 +1445,7 @@ sub releaseepoch {
 
 =item B<releasetime>
 
-Like releasedate, but adds the time.  Format should be YYYY-MM-DD HH::MM::SS.  Like releasedate, all entries are year
+Like releasedate, but adds the time.  Format should be YYYY-MM-DD HH::MM::SS.  Like releasedate, all entries but year
 are optional.
 
 All times should be GMT.
@@ -1575,7 +1593,13 @@ L<MP3::Info>.
 
 Used for user data. Reserved. Please do not use this in any Music::Tag plugin published on CPAN.
 
-=back
+=item B<appleid, artist_end, artist_start, bytes, codec, encoded_by, filetype, frames, framesize, lastplayed, mtime, originalartist, path, playcount, stereo, vbr>
+
+TODO: These need to be documented
+
+=item B<status>
+
+Semi-internal method for printing status.
 
 =cut
 
@@ -1620,6 +1644,12 @@ sub _color {
     }
 }
 
+=item B<error>
+
+Semi-internal method for printing errors.
+
+=cut
+
 sub error {
     my $self = shift;
 
@@ -1630,18 +1660,6 @@ sub error {
 	return;
 }
 
-#sub AUTOLOAD {
-#    my $self = shift;
-#    my $attr = $AUTOLOAD;
-#    $attr =~ s/.*:://;
-#    my $new = shift;
-#    if ( $DataMethods{ lc($attr) } ) {
-#        return $self->_accessor( $attr, $new );
-#    }
-#    else {
-#        croak "Music::Tag:  Invalid method: $attr called";
-#    }
-#}
 
 BEGIN {
     $Music::Tag::DefaultOptions =
@@ -1701,6 +1719,9 @@ sub DESTROY {
 __END__
 
 =pod
+
+=back
+
 
 =head1 PLUGINS
 

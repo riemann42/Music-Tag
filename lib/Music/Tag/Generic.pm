@@ -1,7 +1,8 @@
 package Music::Tag::Generic;
-use Encode;
 use strict;
 use warnings;
+our $VERSION = 0.36;
+use Encode;
 use vars qw($AUTOLOAD);
 use Carp;
 # Copyright (c) 2007,2008,2009,2010 Edward Allen III. Some rights reserved.

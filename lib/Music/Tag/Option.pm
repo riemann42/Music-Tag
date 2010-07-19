@@ -1,5 +1,5 @@
 package Music::Tag::Option;
-our $VERSION = 0.27;
+our $VERSION = 0.36;
 
 # Copyright (c) 2006 Edward Allen III. Some rights reserved.
 

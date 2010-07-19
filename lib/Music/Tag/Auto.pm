@@ -1,5 +1,5 @@
 package Music::Tag::Auto;
-our $VERSION = 0.01;
+our $VERSION = 0.36;
 
 # Copyright (c) 2006 Edward Allen III. Some rights reserved.
 
