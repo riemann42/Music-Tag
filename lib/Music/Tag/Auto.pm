@@ -81,6 +81,10 @@ sub new {
 			$plugin = "Music::Tag::" . $plugin;
 		}
 		$self->status(1, "Auto loading plugin: $plugin");
+	my $type = lc($plugin);
+	$type =~ s/^.*:://;
+        $self->status(2, "Adding filetype: $plugin");
+        $self->info->filetype($type);
 		if($self->info->_has_module($plugin)) {
 			return $plugin->new( $self->info, $self->options );
 		}

@@ -8,8 +8,7 @@ use Config::Options;
 use Pod::Usage;
 use utf8;
 
-
-our $VERSION = .28;
+our $VERSION  = .34;
 our $options  = Config::Options->new();
 our $BASENAME = "musictag";
 if ( $^X =~ /\/*([^\/]*)$/ ) {
@@ -17,41 +16,46 @@ if ( $^X =~ /\/*([^\/]*)$/ ) {
 }
 
 $options->options(
-          { trust_time    => 0,
-            trust_track   => 0,
-            trust_title   => 0,
-            inputplugins  => ['Option'],
-            plugins       => [],
-            outputplugins => [],
-            ANSIColor     => 1,
-            AmazonLocale  => "us",
-            LevenshteinXS => 1,
-            forcechange   => 0,
-            ignore_apic   => 1,
-            optionfile =>
-              [ $ENV{HOME} . "/.musictag/default.conf", $ENV{HOME} . "/.musictag/$BASENAME.conf" ],
-            sort_regex => '[^A-Za-z0-9 _\-]',
-            getinfo    => "",
-            presets    => {
-                         clean => { plugins   => [ 'File', 'MusicBrainz', 'Amazon', 'Lyrics' ],
-                                    keepmtime => 1,
-									presetdescription => '--plugin="File" --plugin="MusicBrainz" --plugin="Amazon" --plugin="Lyrics" --keepmtime',
-                                  },
-                         safeclean => { plugins   => [ 'File', 'MusicBrainz', 'Amazon', 'Lyrics' ],
-                                        keepmtime => 1,
-                                        safe      => 1,
-										presetdescription => '--plugin="File" --plugin="MusicBrainz" --plugin="Amazon" --plugin="Lyrics" --keepmtime --safe',
-                                      },
-                         brainz     => { inputplugins => ['MusicBrainz'],
-										presetdescription => '--plugin="MusicBrainz"',
-						 },
-                         brainzsort => { inputplugins => [ 'File', 'MusicBrainz' ],
-                                         move         => 1,
-                                         dest         => ".",
-										 presetdescription => '--plugin="File" --plugin="MusicBrainz" --move --dest="."',
-                                       },
-                       },
-          }
+    {  trust_time    => 0,
+       trust_track   => 0,
+       trust_title   => 0,
+       inputplugins  => ['Option'],
+       plugins       => [],
+       outputplugins => [],
+       ANSIColor     => 1,
+       AmazonLocale  => "us",
+       LevenshteinXS => 1,
+       forcechange   => 0,
+       ignore_apic   => 1,
+       optionfile    =>
+         [ $ENV{HOME} . "/.musictag/default.conf", $ENV{HOME} . "/.musictag/$BASENAME.conf" ],
+       sort_regex => '[^A-Za-z0-9 _\-]',
+       getinfo    => "",
+       presets    => {
+           clean => {
+               plugins           => [ 'File', 'MusicBrainz', 'Amazon', 'Lyrics' ],
+               keepmtime         => 1,
+               presetdescription =>
+                 '--plugin="File" --plugin="MusicBrainz" --plugin="Amazon" --plugin="Lyrics" --keepmtime',
+           },
+           safeclean => {
+               plugins           => [ 'File', 'MusicBrainz', 'Amazon', 'Lyrics' ],
+               keepmtime         => 1,
+               safe              => 1,
+               presetdescription =>
+                 '--plugin="File" --plugin="MusicBrainz" --plugin="Amazon" --plugin="Lyrics" --keepmtime --safe',
+           },
+           brainz => { inputplugins      => ['MusicBrainz'],
+                       presetdescription => '--plugin="MusicBrainz"',
+                     },
+           brainzsort => {
+               inputplugins => [ 'File', 'MusicBrainz' ],
+               move         => 1,
+               dest         => ".",
+               presetdescription => '--plugin="File" --plugin="MusicBrainz" --move --dest="."',
+                         },
+                  },
+    }
 );
 
 my $cloptions = { plugins => [], outputplugins => [], inputplugins => [] };
@@ -158,12 +162,12 @@ our $clopts = [
        "Help file with more detail."
     ],
 
-	# NOTE:  Help will look for the long help line and put a seperater in it for generated options.
+    # NOTE:  Help will look for the long help line and put a seperater in it for generated options.
 
-    [ "asin=s"          => \$cloptions->{asin}, "Set value: ASIN (Amazon Store ID)" ],
-    [ "artist=s"        => \$cloptions->{artist},         "Set value: artist" ],
-    [ "album=s"         => \$cloptions->{album},           "Set value: album" ],
-    [ "title=s"         => \$cloptions->{title},           "Set value: title" ],
+    [ "asin=s"        => \$cloptions->{asin},        "Set value: ASIN (Amazon Store ID)" ],
+    [ "artist=s"      => \$cloptions->{artist},      "Set value: artist" ],
+    [ "album=s"       => \$cloptions->{album},       "Set value: album" ],
+    [ "title=s"       => \$cloptions->{title},       "Set value: title" ],
     [ "track=i"       => \$cloptions->{track},       "Set value: track" ],
     [ "disc=i"        => \$cloptions->{disc},        "Set value: disc" ],
     [ "totaltracks=i" => \$cloptions->{totaltracks}, "Set value: totaltracks" ],
@@ -172,7 +176,7 @@ our $clopts = [
     [ "duration=i"    => \$cloptions->{duration},    "Set value: track duration in microseconds" ],
               ];
 
-my %seenhash = map { $a=$_->[0]; $a=~s/=.+$//g; $a => $_->[1] } @{$clopts};
+my %seenhash = map { $a = $_->[0]; $a =~ s/=.+$//g; $a => $_->[1] } @{$clopts};
 
 # Please don't set these;
 $seenhash{'tracknum'}  = 1;
@@ -183,7 +187,7 @@ $seenhash{'frequency'} = 1;
 $seenhash{'bitrate'}   = 1;
 
 foreach ( sort @{ Music::Tag->datamethods } ) {
-    next if $seenhash{ $_ };
+    next if $seenhash{$_};
     push @{$clopts}, [ $_ . '=s' => \$cloptions->{$_}, "Set value: $_" ];
 }
 
@@ -191,14 +195,15 @@ if ( exists $options->{optionfile} ) {
     $options->fromfile_perl( $options->{optionfile} );
 }
 
-foreach my $k (keys  %{$options->{presets}}) {
-	push @{$clopts},
-		[  $k => sub {$cloptions->{preset} = $k },
-		   "Preset option set: ".
-		   (exists $options->{presets}->{$k}->{presetdescription} ?
-		   $options->{presets}->{$k}->{presetdescription} :
-		   $k)
-		];
+foreach my $k ( keys %{ $options->{presets} } ) {
+    push @{$clopts},
+      [ $k => sub { $cloptions->{preset} = $k },
+        "Preset option set: "
+          . ( exists $options->{presets}->{$k}->{presetdescription}
+              ? $options->{presets}->{$k}->{presetdescription}
+              : $k
+            )
+      ];
 }
 
 Getopt::Long::GetOptions( map { $_->[0] => $_->[1] } @{$clopts} );
@@ -232,12 +237,12 @@ unless ( ( $options->{ANSIColor} ) && ( Music::Tag->_has_module("Term::ANSIColor
     $options->{ANSIColor} = 0;
 }
 
-if ($cloptions->{printoptions}) {
-        my $d = Data::Dumper->new( [ $options ] );
-        $d->Maxdepth(6)->Terse(1)->Sortkeys(1);
-        binmode( STDOUT, ":utf8" );
-        print $d->Dump();
-		exit;
+if ( $cloptions->{printoptions} ) {
+    my $d = Data::Dumper->new( [$options] );
+    $d->Maxdepth(6)->Terse(1)->Sortkeys(1);
+    binmode( STDOUT, ":utf8" );
+    print $d->Dump();
+    exit;
 }
 
 my @FILES = @ARGV;
@@ -260,25 +265,25 @@ foreach (@FILES) {
 }
 
 sub help {
-	print "musictag version $VERSION\n";
-	print "\nUsage: $^X [OPTION]... [FILES]...\n";
-	print "\nUpdate or view information about music files using Music::Tag\n";
-	print "Please see musictag --longhelp for more details.\n\n";
-	my $n=0;
-	my $d=0;
+    print "musictag version $VERSION\n";
+    print "\nUsage: $^X [OPTION]... [FILES]...\n";
+    print "\nUpdate or view information about music files using Music::Tag\n";
+    print "Please see musictag --longhelp for more details.\n\n";
+    my $n = 0;
+    my $d = 0;
     foreach ( @{$clopts} ) {
-		if (($_->[2] =~ /^Set value:/) && (not $d)){
-		    $d++;
-			print "\nData Method Options:\n";
-		}
-		if (($_->[2] =~ /^Preset option set:/) && (not $n)) {
-			$n++;
-			print "\nAvailable Preset Options:\n";
-		}
+        if ( ( $_->[2] =~ /^Set value:/ ) && ( not $d ) ) {
+            $d++;
+            print "\nData Method Options:\n";
+        }
+        if ( ( $_->[2] =~ /^Preset option set:/ ) && ( not $n ) ) {
+            $n++;
+            print "\nAvailable Preset Options:\n";
+        }
 
-		my $command = $_->[0];
-		my %longhelp = ( s => "VALUE", i => "INT", 's@' => "VALUE", 's%' => "KEY=VALUE" );
-		$command =~ s/=(.+)$/'='. $longhelp{$1}/e;
+        my $command = $_->[0];
+        my %longhelp = ( s => "VALUE", i => "INT", 's@' => "VALUE", 's%' => "KEY=VALUE" );
+        $command =~ s/=(.+)$/'='. $longhelp{$1}/e;
         printf "--%-22s  %s\n", $command, $_->[2];
     }
     exit 1;
@@ -298,7 +303,7 @@ sub fix_dir {
         if ( -d $filename ) {
             fix_dir($filename);
         }
-        elsif ( ( $fname =~ /\.mp3$/i ) or ( $fname =~ /\.m4.$/i ) ) {
+        elsif ( ( $fname =~ /\.mp3$/i ) or ( $fname =~ /\.m4.$/i ) or ($fname =~ /\.flac/i) or ($fname =~ /\.ogg/i) ) {
             fix_file($filename);
         }
     }
@@ -373,11 +378,26 @@ sub fix_file {
         }
     }
 
-    foreach ( @{ $options->{plugins} } ) {
-        my $p = $info->add_plugin( $_, plugin_opts($_) );
-        if ( $options->{verbose} ) { print "Adding plugin $_"; }
-        push @inputplugins,  $p;
-        push @outputplugins, $p;
+    foreach my $pl ( @{ $options->{plugins} } ) {
+        my $c = 0;
+        foreach ( Music::Tag->available_plugins ) {
+            if ( $_ eq $pl ) {
+                my $p = $info->add_plugin( $_, plugin_opts($_) );
+                if ( $options->{verbose} ) { print "Adding plugin $_"; }
+                if ($p) {
+                    push @inputplugins,  $p;
+                    push @outputplugins, $p;
+                }
+                else {
+                    print STDERR "Could Not Add Plugin: $_\n";
+                }
+                $c++;
+                last;
+            }
+        }
+        unless ($c) {
+            print STDERR "Plugin: $pl Not Found\n";
+        }
     }
 
     if ( scalar @{ $options->{outputplugins} } ) {

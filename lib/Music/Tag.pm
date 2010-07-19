@@ -1,5 +1,5 @@
 package Music::Tag;
-our $VERSION = 0.34;
+our $VERSION = 0.35;
 
 # Copyright (c) 2007,2008 Edward Allen III. Some rights reserved.
 
@@ -110,9 +110,8 @@ This module requires these other modules and libraries:
 I strongly recommend the following to improve web searches:
 
    Lingua::EN::Inflect
-   Lingua::Stem
    Text::LevenshteinXS
-   Text::Unaccent 
+   Text::Unaccent::PurePerl
 
 The following just makes things pretty:
 
@@ -212,17 +211,12 @@ false if module is missing.
 
 =item B<Unaccent>
 
-Default true. When true, allows accent-neutral matching with Text::Unaccent. Will reset to
+Default true. When true, allows accent-neutral matching with Text::Unaccent::PurePerl. Will reset to
 false if module is missing.
 
 =item B<Inflect>
 
 Default false. When true, uses Linque::EN::Inflect to perform approximate matches. Will reset to
-false if module is missing.
-
-=item B<Stem>
-
-Default false. When true, uses Linqua::Stem to perform approximate matches. Will reset to
 false if module is missing.
 
 =item B<TimeLocal>
@@ -245,13 +239,11 @@ BEGIN {
                             TimeLocal     => 1,
                             Unaccent      => 1,
                             Inflect       => 0,
-                            Stem          => 0,
-                            StemLocale    => "en-us",
                             optionfile => [ "/etc/musictag.conf", $ENV{HOME} . "/.musictag.conf" ],
                           }
       );
     my @datamethods =
-      qw(albkey album album_type albumartist albumartist_sortname albumid appleid artist artist_end artist_start artist_type artistid artkey asin bitrate booklet bytes codec comment compilation composer copyright country countrycode disc discnum disctitle duration encoded_by encoder filename frames framesize frequency gaplessdata genre ipod ipod_dbid ipod_location ipod_trackid label lastplayed lyrics mb_albumid mb_artistid mb_trackid mip_puid mtime originalartist path picture playcount postgap pregap rating recorddate recordtime releasedate releasetime samplecount secs songid songkey sortname stereo tempo title totaldiscs totaltracks track tracknum url user vbr year upc ean jan);
+      qw(albkey album album_type albumartist albumartist_sortname albumid appleid artist artist_end artist_start artist_type artistid artkey asin bitrate booklet bytes codec comment compilation composer copyright country countrycode disc discnum disctitle duration encoded_by encoder filename frames framesize frequency gaplessdata genre ipod ipod_dbid ipod_location ipod_trackid label lastplayed lyrics mb_albumid mb_artistid mb_trackid mip_puid mtime originalartist path picture playcount postgap pregap rating albumrating recorddate recordtime releasedate releasetime samplecount secs songid songkey sortname stereo tempo title totaldiscs totaltracks track tracknum url user vbr year upc ean jan filetype mip_fingerprint);
     %Music::Tag::DataMethods = map { $_ => 1 } @datamethods;
     %Music::Tag::AUTOPLUGINS = ();
     @Music::Tag::PLUGINS     = ();
@@ -277,7 +269,7 @@ BEGIN {
 
 Class method. Returns list of available plugins. For example:
 
-    foreach (Music::Tag->availble_plugins) {
+    foreach (Music::Tag->available_plugins) {
         if ($_ eq "Amazon") {
             print "Amazon is available!\n";
             $info->add_plugin("Amazon", { locale => "uk" });
@@ -368,14 +360,11 @@ sub new {
         $self->options->{LevenshteinXS} = 0;
         $self->options->{Levenshtein}   = 0;
     }
-    if ( ( $self->options->{Unaccent} ) && ( not $self->_has_module("Text::Unaccent") ) ) {
+    if ( ( $self->options->{Unaccent} ) && ( not $self->_has_module("Text::Unaccent::PurePerl") ) ) {
         $self->options->{Unaccent} = 0;
     }
     if ( ( $self->options->{Inflect} ) && ( not $self->_has_module("Lingua::EN::Inflect") ) ) {
         $self->options->{Inflect} = 0;
-    }
-    if ( ( $self->options->{Stem} ) && ( not $self->_has_module("Lingua::Stem") ) ) {
-        $self->options->{Stem} = 0;
     }
     if ( ( $self->options->{TimeLocal} ) && ( not $self->_has_module("Time::Local") ) ) {
         $self->options->{TimeLocal} = 0;
@@ -756,6 +745,29 @@ sub used_datamethods {
     return \@ret;
 }
 
+=pod
+
+=item B<wav_out($fh)>
+
+Pipes audio data as a wav file to filehandled $fh. Returns true on success, false on failure, undefined if no plugin supports this.
+
+=cut
+
+sub wav_out {
+    my $self = shift;
+    my $fh = shift;
+    foreach ( @{ $self->{_plugins} } ) {
+        if ( ref $_ ) {
+            my $out = $_->wav_out($fh);
+            return $out if (defined $out);
+        }
+        else {
+            $self->error("Invalid Plugin in list: $_");
+        }
+    }
+    return undef;
+}
+
 =back
 
 =head2 Data Access Methods
@@ -786,6 +798,7 @@ sub _isutf8 {
 
     # No char >7F it is prob. valid ASCII, just return it.
     unless ($has7f) {
+        utf8::upgrade($in);
         return $in;
     }
 
@@ -806,10 +819,13 @@ sub _isutf8 {
     # See if it is a valid UTF-8 encoding.
     my $out;
     eval { $out = decode( "UTF-8", $in, 1 ); };
-    return $out unless $@;
-
+    unless ($@) {
+        utf8::upgrade($out);
+        return $out;
+    }
     # Finally just give up and return it.
 
+    utf8::upgrade($in);
     return $in;
 }
 
@@ -971,6 +987,10 @@ sub albumartist_sortname {
 }
 
 =pod
+
+=item B<albumrating>
+
+The rating (value is 0 - 100) for the album (not supported by any plugins yet).
 
 =item B<artist>
 
@@ -1182,6 +1202,10 @@ The MusicBrainz database ID for the track.
 =item B<mip_puid>
 
 The MusicIP puid for the track.
+
+=item B<mip_fingerprint>
+
+The Music Magic fingerprint
 
 =item B<picture>
 
@@ -1705,7 +1729,7 @@ sub tagchange {
 
 =item B<simplify>
 
-A useful method for simplifying artist names and titles. Takes a string, and returns a sting with no whitespace.  Also removes accents (if Text::Unaccent is available) and converts numbers like 1,2,3 as words to one, two, three... (English is used here.  Let me know if it would be helpful to change this. I do not change words to numbers because I prefer sorting "5 Star" under f).  Removes known articles, such as a, the, an, le les, de if they are not at the end of a string. 
+A useful method for simplifying artist names and titles. Takes a string, and returns a sting with no whitespace.  Also removes accents (if Text::Unaccent::PurePerl is available) and converts numbers like 1,2,3 as words to one, two, three... (English is used here.  Let me know if it would be helpful to change this. I do not change words to numbers because I prefer sorting "5 Star" under f).  Removes known articles, such as a, the, an, le les, de if they are not at the end of a string. 
 
 =cut
 
@@ -1713,10 +1737,10 @@ sub simplify {
     my $self = shift;
     my $text = shift;
     chomp $text;
+    return $text unless $text;
 
-    # Text::Unaccent wants a char set, this enforces that...
     if ( $self->options->{Unaccent} ) {
-        $text = Text::Unaccent::unac_string( "UTF-8", encode( "utf8", $text, Encode::FB_DEFAULT ) );
+        $text = Text::Unaccent::PurePerl::unac_string( $text );
     }
 
     $text = lc($text);
@@ -1724,9 +1748,6 @@ sub simplify {
     $text =~ s/\[[^\]]+\]//g;
     $text =~ s/[\s_]/ /g;
 
-    if ( $self->options->{Stem} ) {
-        $text = join( " ", @{ Lingua::Stem::stem( split( /\s/, $text ) ) } );
-    }
 
     if ( length($text) > 5 ) {
         $text =~ s/\bthe\s//g;
@@ -1858,6 +1879,43 @@ sub changed {
     $self->info->changed(@_);
 }
 
+=item B<wav_out()>
+
+If plugin is for a media tag, return stream of wav to filehandle $fh. 
+
+Return True on success, False on failure, undef if not supported.
+
+=cut
+
+sub wav_out {
+    my $self = shift;
+    my $fh = shift;
+    if ($self->options->{wav_out_system}) {
+        my @sys = ();
+        foreach (@{$self->options->{wav_out_system}}) {
+            my $a = $_;
+            $a =~ s/\[FILENAME\]/$self->info->filename()/ge;
+            push @sys, $a;
+        }
+	$self->status(0, "Executing ", join(" ", @sys));
+        if (open (IN,'-|',@sys)) {
+            binmode IN;
+            binmode $fh;
+            my $buffer = "";
+            while (my $count = sysread(IN, $buffer, 8192)) {
+                my $wrote = 0;
+                while ($wrote < $count) {
+                    $wrote += syswrite($fh, $buffer, ($count - $wrote), $wrote)
+                }
+		$buffer="";
+            }
+            return 1;
+        }
+        return 0;
+    }
+    return undef;
+}
+
 =item B<options>
 
 Returns a hashref of options (or sets options, just like Music::Tag method).
@@ -1905,6 +1963,46 @@ do not support all data values. Has not been tested in a threaded environment.
 =for changes continue
 
 =over 4
+
+=item Release Name: 0.35
+
+=over 4
+
+=item *
+
+Changed to using Text::Unaccent::PurePerl
+
+=item *
+
+Removed Lingua::Stem code.  It seemed like overkill.
+
+=item *
+
+Added filetype data method.  Auto module sets to lowercase of module name, but a module can overwrite this.
+
+=item *
+
+Added wav_out method.  Modules can supply a wav_out_system option which is an array that is sent to system function.  
+Command should dump file to standard out. [FILENAME] represents the filename.  This is subject to change, and may
+be removed. Added to ease in conversion of formats.
+
+=item *
+
+Added mip_fingerprint datamethod to represent MusicMagic Fingerprint
+
+=back
+
+=over 4
+
+=item Release Name: 0.34
+
+=over 4
+
+=item *
+
+musictag script now calls available_plugins method to check if a plugin exists, and dies if a plugin fails to load.
+
+=back
 
 =item Release Name: 0.33
 
@@ -2130,7 +2228,7 @@ Initial Public Release
 
 L<Music::Tag::Amazon>, L<Music::Tag::File>, L<Music::Tag::FLAC>, L<Music::Tag::Lyrics>, L<Music::Tag::LyricsFetcher>,
 L<Music::Tag::M4A>, L<Music::Tag::MP3>, L<Music::Tag::MusicBrainz>, L<Music::Tag::OGG>, L<Music::Tag::Option>,
-L<Term::ANSIColor>, L<Text::LevenshteinXS>, L<Text::Unaccent>, L<Lingua::EN::Inflect>, L<Lingua::Stem>
+L<Term::ANSIColor>, L<Text::LevenshteinXS>, L<Text::Unaccent::PurePerl>, L<Lingua::EN::Inflect>
 
 =for readme continue
 
@@ -2147,11 +2245,11 @@ Copyright (c) 2007,2008 Edward Allen III. Some rights reserved.
 This program is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either:
 
-    a) the GNU General Public License as published by the Free
-    Software Foundation; either version 1, or (at your option) any
-    later version, or
+a) the GNU General Public License as published by the Free
+Software Foundation; either version 1, or (at your option) any
+later version, or
 
-    b) the "Artistic License" which comes with Perl.
+b) the "Artistic License" which comes with Perl.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
