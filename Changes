@@ -1,3 +1,8 @@
+Release Name: 0.30
+============================
+* Config::Options .07 now required 
+* POD and Kwalitee changes
+
 Release Name: 0.29
 ============================
 * Fixed bug in autoplugin default settings preventing ogg and flac from working.

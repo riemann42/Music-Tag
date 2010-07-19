@@ -1,5 +1,5 @@
 package Music::Tag;
-our $VERSION = 0.29;
+our $VERSION = 0.30;
 
 # Copyright (c) 2007,2008 Edward Allen III. Some rights reserved.
 #
@@ -109,7 +109,8 @@ Default is false. Setting this to true causes prevents the plugin from giving st
 
 =item B<autoplugin>
 
-Option is a hash reference.  Reference maps file extensions to plugins. Default is: 
+Option is a hash reference maping file extensions to plugins. Technically, this option is for
+the "Music::Tag::Auto" plugin. Default is: 
 
     {   mp3	  => "MP3",
         m4a   => "M4A",
@@ -126,7 +127,7 @@ Array reference of files to load options from.
 
 =item B<ANSIColor>
 
-Set to true to enable color status messages.
+Set to true to enable _color status messages.
 
 =item B<LevenshteinXS>
 
@@ -159,7 +160,6 @@ false if module is missing.
 When true, uses Time::Local to perform date calculations.  Defaults true.  Will reset to
 false if module is missing.
 
-
 =back
 
 =cut
@@ -178,16 +178,6 @@ BEGIN {
                             Stem          => 0,
                             StemLocale    => "en-us",
                             optionfile => [ "/etc/musictag.conf", $ENV{HOME} . "/.musictag.conf" ],
-							autoplugin => {
-								mp3	=> "MP3",
-								m4a => "M4A",
-								m4p => "M4A",
-								mp4 => "M4A",
-								m4b => "M4A",
-							    '3gp' => "M4A",
-								ogg => "OGG",
-								flac => "FLAC"
-							}
                           }
       );
     my @datamethods =
@@ -211,6 +201,12 @@ BEGIN {
         }
     }
 }
+
+=item B<available_plugins()>
+
+Returns list of available plugins.
+
+=cut
 
 sub available_plugins {
 	my $self = shift;
@@ -253,7 +249,7 @@ sub new {
     my $class    = shift;
     my $filename = shift;
     my $options  = shift || {};
-    my $plugin   = shift;
+    my $plugin   = shift || "Auto";
     my $data     = shift || {};
     my $self     = {};
     $self->{data} = $data;
@@ -303,10 +299,9 @@ sub new {
         $self->add_plugin( $plugin, $options );
         return $self;
     }
-    else {
-        return $self->auto_plugin($options);
-        return undef;
-    }
+    #else {
+    #    return $self->auto_plugin($options);
+    #}
 }
 
 sub _has_module {
@@ -343,27 +338,6 @@ First option can be an string such as "MP3" in which case Music::Tag::MP3->new($
 Options can also be included in the string, as in Amazon;locale=us;trust_title=1.
 
 =cut
-
-sub auto_plugin {
-    my $self     = shift;
-    my $options  = shift;
-    my $filename = $self->filename;
-    my $plugin   = "";
-
-    if ( $filename =~ /\.([^\.]*)$/ ) {
-		if (exists $self->options->{autoplugin}->{lc($1)}) {
-		   $plugin = $self->options->{autoplugin}->{lc($1)}; 
-		}
-    }
-    if ($plugin) {
-        $self->add_plugin( $plugin, $options );
-        return $self;
-    }
-    else {
-        $self->error("Sorry, I can't find a plugin for $filename\n");
-        return undef;
-    }
-}
 
 sub add_plugin {
     my $self    = shift;
@@ -583,6 +557,12 @@ sub options {
     }
     return $self->{_options}->options(@_);
 }
+
+=item B<setfileinfo>
+
+Sets the myime and bytes attributes for you from filename.
+
+=cut
 
 sub setfileinfo {
     my $self = shift;
@@ -892,6 +872,13 @@ Composer of song.
 A copyright message can be placed here.
 
 =cut
+
+=item B<country>
+
+Return the country that the track was released in.
+
+=cut
+
 
 sub country {
     my $self = shift;
@@ -1340,24 +1327,24 @@ sub status {
     unless ( $self->options('quiet') ) {
         my $name = ref($self);
         $name =~ s/^Music:://g;
-        print $self->tenprint( $name, 'bold white' ), @_, "\n";
+        print $self->_tenprint( $name, 'bold white' ), @_, "\n";
     }
 }
 
-sub tenprint {
+sub _tenprint {
     my $self  = shift;
     my $text  = shift;
-    my $color = shift || "bold yellow";
+    my $_color = shift || "bold yellow";
     my $size  = shift || 10;
-    return $self->color($color)
+    return $self->_color($_color)
       . sprintf( '%' . $size . 's: ', substr( $text, 0, $size ) )
-      . $self->color('reset');
+      . $self->_color('reset');
 }
 
-sub color {
+sub _color {
     my $self = shift;
     if ( $self->options->{ANSIColor} ) {
-        return Term::ANSIColor::color(@_);
+        return Term::ANSIColor::_color(@_);
     }
     else {
         return "";
@@ -1393,6 +1380,7 @@ package Music::Tag::Generic;
 use Encode;
 use strict;
 use vars qw($AUTOLOAD);
+use Carp;
 
 =pod
 
@@ -1484,7 +1472,7 @@ sub tagchange {
     my $self = shift;
     my $tag  = lc(shift);
     my $to   = shift || $self->info->$tag || "";
-    $self->status( $self->info->tenprint( $tag, 'bold blue', 15 ) . '"' . $to . '"' );
+    $self->status( $self->info->_tenprint( $tag, 'bold blue', 15 ) . '"' . $to . '"' );
     $self->info->changed(1);
 }
 
@@ -1612,7 +1600,7 @@ sub status {
     unless ( $self->info->options('quiet') ) {
         my $name = ref($self);
         $name =~ s/^Music::Tag:://g;
-        print $self->info->tenprint( $name, 'bold white', 12 ), @_, "\n";
+        print $self->info->_tenprint( $name, 'bold white', 12 ), @_, "\n";
     }
 }
 
@@ -1693,13 +1681,16 @@ L<Term::ANSIColor>, L<Text::LevenshteinXS>, L<Text::Unaccent>, L<Lingua::EN::Inf
 
 Edward Allen III <ealleniii _at_ cpan _dot_ org>
 
-=head1 COPYRIGHT
-
-Copyright (c) 2007,2008 Edward Allen III. Some rights reserved.
+=head1 LICENSE
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the Artistic License, distributed
 with Perl.
+
+=head1 COPYRIGHT
+
+Copyright (c) 2007,2008 Edward Allen III. Some rights reserved.
+
 
 
 =cut

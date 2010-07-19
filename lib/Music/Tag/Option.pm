@@ -68,6 +68,24 @@ sub get_tag { set_tag(@_); }
 
 Any tag accepted by L<Music::Tag>.
 
+=head1 METHODS
+
+=over
+
+=item default_options
+
+Returns the default options for the plugin.  
+
+=item set_tag
+
+Sets the info in the Music::Tag file to info from options.
+
+=item get_tag
+
+Same as set_tag.
+
+=back
+
 =head1 BUGS
 
 No known additional bugs provided by this Module.
@@ -81,13 +99,17 @@ L<Music::Tag::M4A>, L<Music::Tag::MP3>, L<Music::Tag::MusicBrainz>, L<Music::Tag
 
 Edward Allen III <ealleniii _at_ cpan _dot_ org>
 
-=head1 COPYRIGHT
-
-Copyright (c) 2007 Edward Allen III. Some rights reserved.
+=head1 LICENSE
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the Artistic License, distributed
 with Perl.
+
+=head1 COPYRIGHT
+
+Copyright (c) 2007 Edward Allen III. Some rights reserved.
+
+
 
 
 =cut

@@ -1,11 +1,14 @@
 bin/musictag
+Changes
 lib/Music/Tag.pm
+lib/Music/Tag/Auto.pm
 lib/Music/Tag/Option.pm
 Makefile.PL
 MANIFEST
 README
-Changes
-t/options.conf
-t/pod.t
 sample/default.conf
+t/1-options.t
+t/2-pod.t
+t/3-pod-coverage.t
+t/options.conf
 META.yml                                 Module meta-data (added by MakeMaker)
