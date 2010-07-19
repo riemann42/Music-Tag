@@ -1,5 +1,8 @@
 package Music::Tag::Option;
+use strict;
+use warnings;
 our $VERSION = 0.36;
+use base qw(Music::Tag::Generic);
 
 # Copyright (c) 2006 Edward Allen III. Some rights reserved.
 
@@ -47,10 +50,6 @@ None.
 
 =cut
 
-use strict;
-use warnings;
-
-our @ISA = qw(Music::Tag::Generic);
 
 sub set_tag {
     my $self = shift;

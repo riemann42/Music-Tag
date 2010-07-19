@@ -1678,7 +1678,6 @@ BEGIN {
     my @datamethods =
       qw(album album_type albumartist albumartist_sortname albumid appleid artist artist_end artist_start artist_type artistid asin bitrate booklet bytes codec comment compilation composer copyright country countrycode disc discnum disctitle duration encoded_by encoder filename frames framesize frequency gaplessdata genre ipod ipod_dbid ipod_location ipod_trackid label lastplayed lyrics mb_albumid mb_artistid mb_trackid mip_puid mtime originalartist path picture playcount postgap pregap rating albumrating recorddate recordtime releasedate releasetime samplecount secs songid sortname stereo tempo title totaldiscs totaltracks track tracknum url user vbr year upc ean jan filetype mip_fingerprint artisttags albumtags tracktags);
     %Music::Tag::DataMethods = map { $_ => 1 } @datamethods;
-    %Music::Tag::AUTOPLUGINS = ();
     @Music::Tag::PLUGINS     = ();
     my $myname = __PACKAGE__;
 	
