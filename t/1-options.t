@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 
-use Test::More tests => 21;
+use Test::More tests => 23;
 use 5.006;
 
 BEGIN { use_ok('Music::Tag') }
@@ -18,6 +18,8 @@ ok( $tag->get_tag, 'get_tag called' );
 is ( $tag->artist , 'Sarah Slean', 'artist');
 is ( $tag->album , 'Orphan Music', 'album');
 is ( $tag->albumartist, 'Sarah Slean', 'albumartist');
+ok ($tag->encoded_by('Sarah'), 'Set encoded_by');
+is ($tag->encoded_by, 'Sarah', 'Get encoded_by');
 $tag->albumtags('Canada,Female,Bible Reference');
 is ( $tag->albumtags->[2], 'Bible Reference', 'albumtags');
 $tag->artisttags(['Canada','Female']);
