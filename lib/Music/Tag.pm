@@ -1,12 +1,15 @@
 package Music::Tag;
-our $VERSION = 0.33;
+our $VERSION = 0.34;
 
 # Copyright (c) 2007,2008 Edward Allen III. Some rights reserved.
+
 #
-## This program is free software; you can redistribute it and/or
-## modify it under the terms of the Artistic License, distributed
-## with Perl.
+# You may distribute under the terms of either the GNU General Public
+# License or the Artistic License, as specified in the README file.
 #
+
+
+
 
 =pod
 
@@ -2135,37 +2138,35 @@ L<Term::ANSIColor>, L<Text::LevenshteinXS>, L<Text::Unaccent>, L<Lingua::EN::Inf
 
 Edward Allen III <ealleniii _at_ cpan _dot_ org>
 
-=head1 LICENSE
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the Artistic License, distributed
-with Perl.
-
 =head1 COPYRIGHT
 
 Copyright (c) 2007,2008 Edward Allen III. Some rights reserved.
 
-=head1 SEE ALSO 
-
-L<Music::Tag::Amazon>, L<Music::Tag::File>, L<Music::Tag::FLAC>, L<Music::Tag::Lyrics>, L<Music::Tag::LyricsFetcher>,
-L<Music::Tag::M4A>, L<Music::Tag::MP3>, L<Music::Tag::MusicBrainz>, L<Music::Tag::OGG>, L<Music::Tag::Option>,
-L<Term::ANSIColor>, L<Text::LevenshteinXS>, L<Text::Unaccent>, L<Lingua::EN::Inflect>, L<Lingua::Stem>
-
-=for readme continue
-
-=head1 AUTHOR 
-
-Edward Allen III <ealleniii _at_ cpan _dot_ org>
-
 =head1 LICENSE
 
-This program is free software; you can redistribute it and/or
-modify it under the terms of the Artistic License, distributed
-with Perl.
+This program is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either:
 
-=head1 COPYRIGHT
+    a) the GNU General Public License as published by the Free
+    Software Foundation; either version 1, or (at your option) any
+    later version, or
 
-Copyright (c) 2007,2008 Edward Allen III. Some rights reserved.
+    b) the "Artistic License" which comes with Perl.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See either
+the GNU General Public License or the Artistic License for more details.
+
+You should have received a copy of the Artistic License with this
+Kit, in the file named "Artistic".  If not, I'll be glad to provide one.
+
+You should also have received a copy of the GNU General Public License
+along with this program in the file named "Copying". If not, write to the
+Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+Boston, MA 02110-1301, USA or visit their web page on the Internet at
+http://www.gnu.org/copyleft/gpl.html.
 
 =cut
 
+1;
