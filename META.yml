@@ -1,0 +1,22 @@
+--- #YAML:1.0
+name:                Music-Tag
+version:             0.28
+abstract:            Module for collecting information about music files.
+license:             ~
+author:              
+    - Edward Allen (ealleniii _at_ cpan _dot_ org)
+generated_by:        ExtUtils::MakeMaker version 6.42
+distribution_type:   module
+requires:     
+    Config::Options:               0.01
+    Data::Dumper:                  2
+    Digest::SHA1:                  2.11
+    Encode:                        2.12
+    File::Copy:                    0
+    File::Spec:                    3.24
+    IO::File:                      1.13
+    Locale::Country:               2.07
+    Test::More:                    0
+meta-spec:
+    url:     http://module-build.sourceforge.net/META-spec-v1.3.html
+    version: 1.3
