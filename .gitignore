@@ -12,3 +12,4 @@ Makefile.old
 *.o
 *.tgz
 *.tar.gz
+cover_db

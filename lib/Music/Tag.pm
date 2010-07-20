@@ -1,5 +1,5 @@
 package Music::Tag;
-use strict qw(vars);
+use strict;
 use warnings;
 our $VERSION = 0.36;
 
@@ -227,7 +227,6 @@ false if module is missing.
 
 =cut
 
-
 =item B<available_plugins()>
 
 Class method. Returns list of available plugins. For example:
@@ -303,6 +302,7 @@ sub new {
         $self->{_plugins} = [];
         $self->options($options);
         $self->filename($filename);
+		$self->{changed} = 0;
     }
 
     if ( ( $self->options->{ANSIColor} ) && ( $self->_has_module("Term::ANSIColor") ) ) {
@@ -440,7 +440,7 @@ sub plugin {
             }
         }
     }
-	return $self->{_plugins};
+    return $self->{_plugins};
 }
 
 =pod
@@ -605,9 +605,9 @@ sub setfileinfo {
         my @stat = stat $self->filename;
         $self->mtime( $stat[9] );
         $self->bytes( $stat[7] );
-		return \@stat;
+        return \@stat;
     }
-	return
+    return;
 }
 
 =item B<sha1()>
@@ -620,7 +620,7 @@ sub sha1 {
     my $self = shift;
     return unless ( ( $self->filename ) && ( -e $self->filename ) );
     my $maxsize = 4 * 4096;
-	my $in;
+    my $in;
     open( $in, '<', $self->filename ) or die "Bad file: $self->filename\n";
     my @stat = stat $self->filename;
     my $sha1 = Digest::SHA1->new();
@@ -656,18 +656,18 @@ sub datamethods {
     my $self = shift;
     my $add  = shift;
     if ($add) {
-		my $new = lc($add);
+        my $new = lc($add);
         $DataMethods{$new} = 1;
-		{
-			no strict 'refs';
-			if (! defined &{$new}) {
-				*{__PACKAGE__.'::'.$new} = sub {
-					my $self = shift;
-					my $n = shift;
-					$self->_accessor($new, $n);
-				} 
-			}
-		}
+        {
+            no strict 'refs';
+            if ( !defined &{$new} ) {
+                *{ __PACKAGE__ . '::' . $new } = sub {
+                    my $self = shift;
+                    my $n    = shift;
+                    $self->_accessor( $new, $n );
+                  }
+            }
+        }
     }
     return [ keys %DataMethods ];
 }
@@ -785,7 +785,7 @@ sub _isutf8 {
 }
 
 sub _accessor {
-	my ($self, $attr, $value, $default) = @_;
+    my ( $self, $attr, $value, $default ) = @_;
     unless ( exists $self->{data}->{ uc($attr) } ) {
         $self->{data}->{ uc($attr) } = undef;
     }
@@ -809,14 +809,14 @@ sub _timeaccessor {
     my $default = shift;
 
     if ( defined $value ) {
-        if ( $value =~
-                  /^(\d\d\d\d)[\s\-]?  #Year
+        if ($value =~ /^(\d\d\d\d)[\s\-]?  #Year
 			        (\d\d)?[\s\-]?     #Month
 					(\d\d)?[\s\-]?     #Day
 					(\d\d)?[\s\-:]?    #Hour
 					(\d\d)?[\s\-:]?    #Min
 					(\d\d)?            #Sec
-				   /xms ) {
+				   /xms
+          ) {
             $value = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
                               $1, $2 || 1, $3 || 1, $4 || 12, $5 || 0, $6 || 0 );
             if (    ( $1 == 0 )
@@ -850,15 +850,15 @@ sub _epochaccessor {
     }
     my $v = $self->_timeaccessor( $attr, $set );
     my $ret = undef;
-    if ( ( defined $v )
-        && (
-            $v =~ /^(\d\d\d\d)[\s\-]?  #Year
+    if (( defined $v )
+        && ($v =~ /^(\d\d\d\d)[\s\-]?  #Year
 			        (\d\d)?[\s\-]?     #Month
 					(\d\d)?[\s\-]?     #Day
 					(\d\d)?[\s\-:]?    #Hour
 					(\d\d)?[\s\-:]?    #Min
 					(\d\d)?            #Sec
-				   /xms )
+				   /xms
+        )
       ) {
         eval { $ret = Time::Local::gmtime( $6 || 0, $5 || 0, $4 || 12, $3 || 1, $2 || 0, $1 ); };
         $self->error($@) if $@;
@@ -877,21 +877,19 @@ sub _dateaccessor {
     }
     my $v = $self->_timeaccessor( $attr, $new );
     my $ret = undef;
-    if ( ( defined $v )
-        && (
-            $v =~ /^(\d\d\d\d)[\s\-]?  #Year
+    if (( defined $v )
+        && ($v =~ /^(\d\d\d\d)[\s\-]?  #Year
 			        (\d\d)?[\s\-]?     #Month
 					(\d\d)?[\s\-]?     #Day
 					(\d\d)?[\s\-:]?    #Hour
 					(\d\d)?[\s\-:]?    #Min
 					(\d\d)?            #Sec
-				   /xms )
+				   /xms
+        )
       ) {
-        return sprintf( "%04d-%02d-%02d", $1, $2, $3 );
+        $ret = sprintf( "%04d-%02d-%02d", $1, $2, $3 );
     }
-    else {
-        return undef;  # I know this is not PBP.  Deal.
-    }
+    return $ret;
 }
 
 sub _ordinalaccessor {
@@ -943,7 +941,8 @@ sub _list_accessor {
         $self->_accessor( $attr, $v, $d );
     }
     my $ret = $self->_accessor($attr);
-    return [ split( /\s*,\s*/, $ret ) ];
+	if ($ret) { return [ split( /\s*,\s*/, $ret ) ] }
+	return undef;
 }
 
 =pod
@@ -1060,13 +1059,13 @@ Return the country that the track was released in.
 sub country {
     my $self = shift;
     my $new  = shift;
-    if ( defined($new) ) {
+    if ( defined($new) && country2code($new) ) {
         $self->_accessor( "COUNTRYCODE", country2code($new) );
     }
     if ( $self->countrycode ) {
         return code2country( $self->countrycode );
     }
-    return undef;
+    return $self->_accessor( "country", $new );
 }
 
 =pod
@@ -1263,12 +1262,12 @@ will modify the data-value as expected. In other words:
 
 sub _binslurp {
     my $file = shift;
-	my $in;
+    my $in;
     open( $in, '<', $file ) or croak "Couldn't open $file: $!";
     my $ret;
     my $off = 0;
     while ( my $r = read $in, $ret, 1024, $off ) { last unless $r; $off += $r }
-	CORE::close ($in);
+    CORE::close($in);
     return $ret;
 }
 
@@ -1299,9 +1298,7 @@ sub picture {
             && ( length $self->{data}->{PICTURE}->{_Data} ) ) {
         return $self->{data}->{PICTURE};
     }
-    else {
-        return undef;
-    }
+    return {};
 }
 
 =pod
@@ -1330,9 +1327,7 @@ sub picture_filename {
             && ( length( $self->{data}->{PICTURE}->{_Data} ) ) ) {
         return 0;
     }
-    else {
-        return undef;
-    }
+    return undef;
 }
 
 =pod
@@ -1364,7 +1359,7 @@ sub picture_exists {
             && ( length $self->{data}->{PICTURE}->{_Data} ) ) {
         return 1;
     }
-	return undef;
+    return 0;
 }
 
 =pod
@@ -1620,7 +1615,7 @@ sub status {
             print $self->_tenprint( $name, 'bold white', 12 ), @_, "\n";
         }
     }
-	return;
+    return;
 }
 
 sub _tenprint {
@@ -1657,9 +1652,8 @@ sub error {
     carp( ref($self), " ", @_ );
 
     # }
-	return;
+    return;
 }
-
 
 BEGIN {
     $Music::Tag::DefaultOptions =
@@ -1678,22 +1672,22 @@ BEGIN {
     my @datamethods =
       qw(album album_type albumartist albumartist_sortname albumid appleid artist artist_end artist_start artist_type artistid asin bitrate booklet bytes codec comment compilation composer copyright country countrycode disc discnum disctitle duration encoded_by encoder filename frames framesize frequency gaplessdata genre ipod ipod_dbid ipod_location ipod_trackid label lastplayed lyrics mb_albumid mb_artistid mb_trackid mip_puid mtime originalartist path picture playcount postgap pregap rating albumrating recorddate recordtime releasedate releasetime samplecount secs songid sortname stereo tempo title totaldiscs totaltracks track tracknum url user vbr year upc ean jan filetype mip_fingerprint artisttags albumtags tracktags);
     %Music::Tag::DataMethods = map { $_ => 1 } @datamethods;
-    @Music::Tag::PLUGINS     = ();
+    @Music::Tag::PLUGINS = ();
     my $myname = __PACKAGE__;
-	
-	{
-		no strict 'refs';
-		foreach my $m (@datamethods) {
-			next if defined &{$m};
-			*{$myname.'::'.$m} = sub {
-				my $self = shift;
-				my $new = shift;
-				$self->_accessor($m, $new);
-			} 
-		}
-	}
-		
-    my $me     = $myname;
+
+    {
+        no strict 'refs';
+        foreach my $m (@datamethods) {
+            next if defined &{$m};
+            *{ $myname . '::' . $m } = sub {
+                my $self = shift;
+                my $new  = shift;
+                $self->_accessor( $m, $new );
+              }
+        }
+    }
+
+    my $me = $myname;
     $me =~ s/\:\:/\//g;
 
     foreach my $d (@INC) {

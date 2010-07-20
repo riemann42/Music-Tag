@@ -1,7 +1,5 @@
 #!/usr/bin/perl
 # This basic example script shows a use for Music::Tag
-
-
 use strict;
 use Music::Tag;
 

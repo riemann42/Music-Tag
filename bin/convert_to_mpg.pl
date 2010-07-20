@@ -2,7 +2,7 @@
 use strict;
 use Music::Tag;
 
-my @lame = ( "lame", "--preset", "extreme", "-", '[FILENAME]') 
+my @lame = ( "lame", "--preset", "extreme", "-", '[FILENAME]') ;
 
 foreach my $infile (@ARGV) {
     my $info = Music::Tag->new($infile);

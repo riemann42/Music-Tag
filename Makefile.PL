@@ -1,3 +1,4 @@
+use strict;
 use ExtUtils::MakeMaker;
 WriteMakefile( NAME         => 'Music::Tag',
                VERSION_FROM => 'lib/Music/Tag.pm',
