@@ -1,4 +1,5 @@
 Artistic
+bin/convert_to_mpg.pl
 bin/musictag
 CHANGES
 Copying
@@ -11,11 +12,11 @@ Makefile.PL
 MANIFEST
 README
 sample/default.conf
+t/.3-auto.t.swp
 t/1-general.t
-t/1-options.t
 t/2-options.t
-t/2-pod.t
-t/3-pod-coverage.t
+t/3-auto.t
+t/96-test-strict.t
 t/97-pod.t
-t/98-pod-coverage.t
+t/fake.music
 t/options.conf

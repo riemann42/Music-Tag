@@ -1,5 +1,4 @@
-#!/usr/bin/perl
-
+#!/usr/bin/perl -w
 use strict;
 use Test::More;
 eval "use Test::Pod::Coverage 1.00";
