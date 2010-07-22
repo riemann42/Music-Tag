@@ -1319,7 +1319,7 @@ sub picture {
 =item B<picture_filename>
 
 Returns filename used for picture data.  If no filename returns 0.  If no picture returns undef. 
-If a value is passed, sets the filename.
+If a value is passed, sets the filename. filename is path relative to the music file.
 
 =cut
 

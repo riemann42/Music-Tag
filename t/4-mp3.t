@@ -47,7 +47,9 @@ sub filetest {
 		# Now add a picture.
 		#
 
-		ok ($tag->picture_filename('t/beethoven.jpg'), 'add picture');
+		ok ($tag->picture_filename('beethoven.jpg'), 'add picture');
+
+		ok ($tag->picture_exists, 'Picture Exists 1');
 
         ok( $tag->set_tag, 'set_tag: ' . $filetest );
 
@@ -62,7 +64,7 @@ sub filetest {
 			is($tag2->$f, $values{$f}, "Read back $f");
 		}
 
-		ok ($tag2->picture_exists, 'Picture Exists');
+		ok ($tag2->picture_exists, 'Picture Exists 2');
 
 
         $tag2->close();
