@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 47;
+use Test::More tests => 51;
 eval { require Music::Tag::MP3 };
 plan( skip_all => 'Music::Tag::MP3 not installed; skipping' ) if $@;
 use File::Copy;
@@ -28,6 +28,8 @@ sub filetest {
         is( $tag->artist, "Beethoven", 'Artist: ' . $filetest );
         is( $tag->album,  "GPL",       'Album: ' . $filetest );
         is( $tag->title,  "Elise",     'Title: ' . $filetest );
+		is ($tag->sha1, '39cd05447fa9ab6d6db08f41a78ac8628874c37e', 'sha1 test');
+		ok (!$tag->picture_exists, 'Picture does not Exists');
 
 		# Now go through each method supported and test.
 
@@ -41,7 +43,14 @@ sub filetest {
 			$values{$f} = $val;
 		}
 
+
+		# Now add a picture.
+		#
+
+		ok ($tag->picture_filename('t/beethoven.jpg'), 'add picture');
+
         ok( $tag->set_tag, 'set_tag: ' . $filetest );
+
         $tag->close();
         $tag = undef;
         my $tag2 = Music::Tag->new( $filetest, $testoptions);
@@ -52,6 +61,10 @@ sub filetest {
 		foreach my $f (keys %values) {
 			is($tag2->$f, $values{$f}, "Read back $f");
 		}
+
+		ok ($tag2->picture_exists, 'Picture Exists');
+
+
         $tag2->close();
         unlink($filetest);
     }

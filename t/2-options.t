@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 
-use Test::More tests => 158;
+use Test::More tests => 161;
 use 5.006;
 
 BEGIN { use_ok('Music::Tag') }
@@ -9,6 +9,7 @@ BEGIN { use_ok('Music::Tag') }
 my $tag = Music::Tag->new( undef,  { artist => "Sarah Slean",
 								     album => "Orphan Music",
 									 title => "Mary",
+									 comment => undef,  # Should be ignored for now.
 									 ANSIColor => 0,
 									 quiet => 1,
 									 locale => "ca" } , "Option" );
@@ -19,6 +20,9 @@ ok( $tag->get_tag, 'get_tag called' );
 cmp_ok( $tag->artist ,'eq', 'Sarah Slean', 'artist');
 cmp_ok( $tag->album ,'eq', 'Orphan Music', 'album');
 cmp_ok( $tag->albumartist,'eq', 'Sarah Slean', 'albumartist');
+
+ok ( ! defined $tag->comment, 'comment should be undefined');
+
 ok ($tag->encoded_by('Sarah'), 'Set encoded_by');
 cmp_ok($tag->encoded_by,'eq', 'Sarah', 'Get encoded_by');
 $tag->albumtags('Canada,Female,Bible Reference');
@@ -49,13 +53,15 @@ ok ($tag->testit('blue'), 'write to custom method');
 cmp_ok($tag->testit,'eq', 'blue', 'read custom method');
 
 foreach my $meth (qw(album album_type albumartist albumartist_sortname albumid appleid artist artist_type artistid asin bitrate booklet codec comment compilation composer copyright disctitle encoded_by encoder genre ipod ipod_dbid ipod_location ipod_trackid label lyrics mb_albumid mb_artistid mb_trackid mip_puid originalartist path sortname  title  url user filetype mip_fingerprint)) {
-	ok($tag->$meth('test'), 'auto write to '.$meth);
-	cmp_ok($tag->$meth,'eq', 'test', 'auto read from '.$meth);
+	my $val =  "test" . $meth . int(rand(1000));
+	ok($tag->$meth($val), 'auto write to '.$meth);
+	cmp_ok($tag->$meth,'eq', $val, 'auto read from '.$meth);
 }
 
 foreach my $meth (qw( bytes disc duration frames framesize frequency gaplessdata playcount postgap pregap rating albumrating  samplecount secs stereo tempo totaldiscs totaltracks vbr)) {
-	ok($tag->$meth('22'), 'auto write to '.$meth);
-	cmp_ok($tag->$meth,'==', '22', 'auto read from '.$meth);
+	my $val =  int(rand(1000));
+	ok($tag->$meth($val), 'auto write to '.$meth);
+	cmp_ok($tag->$meth,'==', $val, 'auto read from '.$meth);
 }
 
 foreach my $meth (qw(artist_end artist_start lastplayed mtime recordtime releasetime)) {
@@ -68,5 +74,7 @@ foreach my $meth (qw(recorddate releasedate)) {
 	cmp_ok($tag->$meth,'eq', '2009-07-12', 'auto read from'.$meth);
 }
 
+ok (! $tag->setfileinfo, 'setfileinfo should fail');
+ok (! $tag->sha1, 'sha1 should fail');
 
 

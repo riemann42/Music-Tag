@@ -440,7 +440,7 @@ sub plugin {
             }
         }
     }
-    return $self->{_plugins};
+    return;
 }
 
 =pod
@@ -612,7 +612,7 @@ sub setfileinfo {
 
 =item B<sha1()>
 
-Returns a sha1 digest of the first 16K of the music file.  
+Returns a sha1 digest of the filesize in little endian then the first 16K of the music file. Should be fairly unique. 
 
 =cut
 
@@ -626,7 +626,6 @@ sub sha1 {
     my $sha1 = Digest::SHA1->new();
     $sha1->add( pack( "V", $stat[7] ) );
     my $d;
-
     if ( read( $in, $d, $maxsize ) ) {
         $sha1->add($d);
     }

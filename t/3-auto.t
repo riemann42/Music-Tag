@@ -1,13 +1,13 @@
 #!/usr/bin/perl -w
 use strict;
 
-use Test::More tests => 10;
+use Test::More tests => 13;
 use 5.006;
 
 BEGIN { use_ok('Music::Tag') }
 
 my $tag = Music::Tag->new( 't/fake.music',
-									{ autoplugin => {music => 'Option'},
+									{ autoplugin => {music => 'Option', 'nothing' => 'Option'} ,
 									 artist => "Sarah Slean",
 								     album => "Orphan Music",
 									 title => "Mary",
@@ -29,4 +29,9 @@ $tag->artisttags(['Canada','Female']);
 cmp_ok( $tag->artisttags->[1],'eq', 'Female', 'artisttags');
 
 
+my $tag2 = Music::Tag->new( 't/fake.music' );
 
+ok ($tag2, 'Object defined');
+
+ok ($tag2->setfileinfo, 'setfileinfo');
+cmp_ok ($tag2->bytes,'==',26,'byte size');
