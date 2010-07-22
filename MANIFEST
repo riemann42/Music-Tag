@@ -12,11 +12,10 @@ Makefile.PL
 MANIFEST
 README
 sample/default.conf
-t/.3-auto.t.swp
-t/1-general.t
-t/2-options.t
-t/3-auto.t
-t/96-test-strict.t
-t/97-pod.t
-t/fake.music
 t/options.conf
+t/3-auto.t
+t/97-pod.t
+t/2-options.t
+t/1-general.t
+t/fake.music
+t/98-pod-coverage.t
