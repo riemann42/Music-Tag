@@ -13,3 +13,4 @@ Makefile.old
 *.tgz
 *.tar.gz
 cover_db
+Debian_CPANTS.txt

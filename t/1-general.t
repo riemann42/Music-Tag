@@ -17,7 +17,7 @@ foreach (@available_plugins) {
 
 ok($ok, 'available_plugins_list');
 
-is(Music::Tag->default_options->{'TimeLocal'}, 1, 'default_options');
+is(Music::Tag->default_options->{'Unaccent'}, 1, 'default_options');
 ok(Music::Tag->LoadOptions('t/options.conf'),
     'Loading options file as class method');
 

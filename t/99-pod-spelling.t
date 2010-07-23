@@ -166,4 +166,9 @@ lastplayed
 originalartist
 playcount
 vbr
+lastplayeddate
+lastplayedepoch
+lastplayedtime
+mdate
+mepoch
 

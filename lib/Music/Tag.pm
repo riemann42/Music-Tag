@@ -139,6 +139,7 @@ use Encode;
 use Config::Options;
 use Digest::SHA1;
 use Music::Tag::Generic;
+use Time::Local;
 use utf8;
 use vars qw(%DataMethods);
 
@@ -228,11 +229,6 @@ Text::Unaccent::PurePerl. Will reset to false if module is missing.
 
 Default false. When true, uses Linque::EN::Inflect to perform approximate 
 matches. Will reset to false if module is missing.
-
-=item B<TimeLocal>
-
-When true, uses Time::Local to perform date calculations.  Defaults true.  
-Will reset to false if module is missing.
 
 =back
 
@@ -337,7 +333,6 @@ sub _test_modules {
         'Levenshtein' => 'Levenshtein',
 		'Unaccent' => 'Text::Unaccent::PurePerl',
 		'Inflect'  => 'Lingua::EN::Inflect',
-		'TimeLocal' => 'Time::Local',
     );
 	while (my ($k,$v) = each %module_map) {
 		if (   ($self->options->{$k})
@@ -647,7 +642,7 @@ sub setfileinfo {
     my $self = shift;
     if ($self->filename) {
         my @stat = stat $self->filename;
-        $self->mtime($stat[9]);
+        $self->mepoch($stat[9]);
         $self->bytes($stat[7]);
         return \@stat;
     }
@@ -706,16 +701,9 @@ sub datamethods {
     if ($add) {
         my $new = lc($add);
         $DataMethods{$new} = 1;
-        {
-            no strict 'refs';
-            if (!defined &{$new}) {
-                *{__PACKAGE__ . '::' . $new} = sub {
-                    my $self = shift;
-                    my $n    = shift;
-                    $self->_accessor($new, $n);
-                  }
-            }
-        }
+		if (!defined &{$new}) {
+			$self->_make_accessor($new);
+		}
     }
     return [keys %DataMethods];
 }
@@ -837,6 +825,17 @@ sub _isutf8 {
     return $in;
 }
 
+
+sub _make_accessor {
+	my ($self,$m) = @_;
+	no strict 'refs';
+	*{__PACKAGE__ . '::' . $m} = sub {
+		my ($self,$new) = @_;
+		$self->_accessor($m, $new);
+	 };
+	 return;
+}
+
 sub _accessor {
     my ($self, $attr, $value, $default) = @_;
     unless (exists $self->{data}->{uc($attr)}) {
@@ -897,7 +896,6 @@ sub _epochaccessor {
     my $attr  = shift;
     my $value = shift;
     my $set   = undef;
-    return unless ($self->options('TimeLocal'));
     if (defined($value)) {
         my @tm = gmtime($value);
         $set = sprintf("%04d-%02d-%02d %02d:%02d:%02d",
@@ -918,8 +916,8 @@ sub _epochaccessor {
            )
       ) {
         eval {
-            $ret = Time::Local::gmtime($6 || 0, $5 || 0, $4 || 12, $3 || 1,
-                                       $2 || 0, $1);
+            $ret = Time::Local::timegm($6 || 0, $5 || 0, $4 || 12, $3 || 1,
+                                       ($2 - 1) || 0, ($1 - 1900));
         };
         $self->error($@) if $@;
     }
@@ -931,7 +929,6 @@ sub _dateaccessor {
     my $attr  = shift;
     my $value = shift;
     my $new   = undef;
-    return unless ($self->options('TimeLocal'));
     if (defined($value)) {
         $new = $value;
     }
@@ -950,6 +947,28 @@ sub _dateaccessor {
         $ret = sprintf("%04d-%02d-%02d", $1, $2, $3);
     }
     return $ret;
+}
+
+sub _make_time_accessor {
+	my $self = shift;
+	my $m = shift;
+	my $t = shift || $m.'time';
+	my $d = shift || $m.'date';
+	my $e = shift || $m.'epoch';
+	no strict 'refs';
+	*{__PACKAGE__ . '::' . $t} = sub {
+		my ($self,$new) = @_;
+		$self->_timeaccessor(uc($m), $new);
+	 };
+	*{__PACKAGE__ . '::' . $d} = sub {
+		my ($self,$new) = @_;
+		$self->_dateaccessor(uc($m), $new);
+	 };
+	*{__PACKAGE__ . '::' . $e} = sub {
+		my ($self,$new) = @_;
+		$self->_epochaccessor(uc($m), $new);
+	 };
+	 return;
 }
 
 sub _ordinalaccessor {
@@ -1062,6 +1081,34 @@ The rating (value is 0 - 100) for the album (not supported by any plugins yet).
 =item B<artist>
 
 The artist responsible for the track.
+
+=item B<artist_start>
+
+The date the artist was born or a group was founded. Sets artist_start_time and artist_start_epoch.
+
+=item B<artist_start_time>
+
+The time the artist was born or a group was founded. Sets artist_start and artist_start_epoch
+
+=item B<artist_start_epoch>
+
+The number of seconds since the epoch when artist was born or a group was founded. Sets artist_start and artist_start_time
+
+See release_epoch.
+
+=item B<artist_end>
+
+The date the artist died or a group was disbanded. Sets artist_end_time and artist_end_epoch.
+
+=item B<artist_end_time>
+
+The time the artist died or a group was disbanded. Sets artist_end and artist_end_epoch
+
+=item B<artist_end_epoch>
+
+The number of seconds since the epoch when artist died or a group was disbanded. Sets artist_end and artist_end_time
+
+See release_epoch.
 
 =item B<artisttags>
 
@@ -1270,9 +1317,35 @@ sub jan {
 
 The label responsible for distributing the recording.
 
+=item B<lastplayeddate>
+
+The date the song was last played.
+
+=item B<lastplayedtime>
+
+The time the song was last played.
+
+=item B<lastplayedepoch>
+
+The number of seconds since the epoch the time the song was last played.
+
+See release_epoch.
+
 =item B<lyrics>
 
 The lyrics of the recording.
+
+=item B<mdate>
+
+The date the file was last modified.
+
+=item B<mtime>
+
+The time the file was last modified.
+
+=item B<mepoch>
+
+The number of seconds since the epoch the time the file was last modified.
 
 =item B<mb_albumid>
 
@@ -1461,24 +1534,6 @@ The time and date track was recoded.  See notes in releasetime for format.
 
 =cut
 
-sub recorddate {
-    my $self = shift;
-    return $self->_dateaccessor("RECORDTIME", @_);
-}
-
-sub recordepoch {
-    my $self = shift;
-    return $self->_epochaccessor("RECORDTIME", @_);
-}
-
-sub recordtime {
-    my $self = shift;
-    return $self->_timeaccessor("RECORDTIME", @_);
-}
-
-=pod
-
-
 =item B<releasedate>
 
 The release date in the form YYYY-MM-DD.  The day or month values may be left off.  Please keep this in mind if you are parsing this data.
@@ -1497,25 +1552,18 @@ All times should be GMT.
 
 =cut
 
-sub releasedate {
-    my $self = shift;
-    return $self->_dateaccessor("RELEASETIME", @_);
-}
-
-=pod
-
 =item B<releaseepoch>
 
-The release date of an album in terms "UNIX time", or seconds since the SYSTEM epoch (usually Midnight, January 1, 1970 GMT). This can be negative or > 32 bits, so please use caution before assuming this value is a valid UNIX date.  Using this requires the L<Time::Local> module, so install it if you have not.  Returns undef if Time::Local is not installed.  This value will update releasedate and vice-versa.  Since this accurate to the second and releasedate only to the day, setting releasedate will always set this to 12:00 PM GMT the same day.  Returns undef if Time::Local is not installed. 
+The release date of an album in terms "UNIX time", or seconds since the SYSTEM 
+epoch (usually Midnight, January 1, 1970 GMT). This can be negative or > 32 bits,
+so please use caution before assuming this value is a valid UNIX date. This value 
+will update releasedate and vice-versa.  Since this accurate to the second and 
+releasedate only to the day, setting releasedate will always set this to 12:00 PM 
+GMT the same day. 
 
-=cut
-
-sub releaseepoch {
-    my $self = shift;
-    return $self->_epochaccessor("RELEASETIME", @_);
-}
-
-=pod
+Please note that this has some limitations. In 32bit Linux, the only supported
+dates are Dec 1901 to Jan 2038. In windows, dates before 1970 will not work. 
+Refer to the docs for Time::Local for more details.
 
 =item B<releasetime>
 
@@ -1523,15 +1571,6 @@ Like releasedate, but adds the time.  Format should be YYYY-MM-DD HH::MM::SS.  L
 are optional.
 
 All times should be GMT.
-
-=cut
-
-sub releasetime {
-    my $self = shift;
-    return $self->_timeaccessor("RELEASETIME", @_);
-}
-
-=pod
 
 =item B<secs>
 
@@ -1658,7 +1697,7 @@ These three values can be used by a database plugin. They should be GUIDs like t
 
 Suggested values for an iPod plugin.
 
-=item B<pregap, postgap, gaplessdata, samplecount>
+=item B<pregap, postgap, gaplessdata, samplecount, appleid>
 
 Used to store gapless data.  Some of this is supported by L<Music::Tag::MP3> as an optional value requiring a patched
 L<MP3::Info>.
@@ -1667,7 +1706,7 @@ L<MP3::Info>.
 
 Used for user data. Reserved. Please do not use this in any Music::Tag plugin published on CPAN.
 
-=item B<appleid, artist_end, artist_start, bytes, codec, encoded_by, filetype, frames, framesize, lastplayed, mtime, originalartist, path, playcount, stereo, vbr>
+=item B<bytes, codec, encoded_by, filetype, frames, framesize, mtime, originalartist, path, playcount, stereo, vbr>
 
 TODO: These need to be documented
 
@@ -1734,6 +1773,7 @@ sub error {
     return;
 }
 
+
 BEGIN {
     $Music::Tag::DefaultOptions =
       Config::Options->new(
@@ -1742,7 +1782,6 @@ BEGIN {
           ANSIColor     => 0,
           LevenshteinXS => 1,
           Levenshtein   => 1,
-          TimeLocal     => 1,
           Unaccent      => 1,
           Inflect       => 0,
           optionfile => ["/etc/musictag.conf", $ENV{HOME} . "/.musictag.conf"],
@@ -1750,33 +1789,35 @@ BEGIN {
       );
     my @datamethods =
       qw(album album_type albumartist albumartist_sortname albumid appleid 
-	     artist artist_end artist_start artist_type artistid asin bitrate 
+	     artist artist_end artist_start artist_start_time artist_start_epoch 
+		 artist_end_time artist_end_epoch artist_type artistid asin bitrate 
 		 booklet bytes codec comment compilation composer copyright country 
 		 countrycode disc discnum disctitle duration encoded_by encoder filename
 		 frames framesize frequency gaplessdata genre ipod ipod_dbid ipod_location
-		 ipod_trackid label lastplayed lyrics mb_albumid mb_artistid mb_trackid 
-		 mip_puid mtime originalartist performer path picture playcount postgap 
-		 pregap rating albumrating recorddate recordtime releasedate releasetime 
-		 samplecount secs songid sortname stereo tempo title totaldiscs totaltracks
-		 track tracknum url user vbr year upc ean jan filetype mip_fingerprint 
-		 artisttags albumtags tracktags);
+		 ipod_trackid label lastplayedtime lastplayeddate lastplayedepoch 
+		 lyrics mb_albumid mb_artistid mb_trackid mip_puid mtime mdate mepoch 
+		 originalartist performer path picture playcount postgap pregap rating 
+		 albumrating recorddate recordtime releasedate releasetime recordepoch 
+		 releaseepoch samplecount secs songid sortname stereo tempo title 
+		 totaldiscs totaltracks track tracknum url user vbr year upc ean jan
+		 filetype mip_fingerprint artisttags albumtags tracktags);
     %Music::Tag::DataMethods = map { $_ => 1 } @datamethods;
     @Music::Tag::PLUGINS = ();
-    my $myname = __PACKAGE__;
+ 
+	Music::Tag->_make_time_accessor('record'); 
+	Music::Tag->_make_time_accessor('release'); 
+	Music::Tag->_make_time_accessor('m');
+	Music::Tag->_make_time_accessor('lastplayed'); 
+	Music::Tag->_make_time_accessor('artist_start','artist_start_time','artist_start','artist_start_epoch'); 
+	Music::Tag->_make_time_accessor('artist_end','artist_end_time','artist_end','artist_end_epoch'); 
 
-    {
-        no strict 'refs';
-        foreach my $m (@datamethods) {
-            next if defined &{$m};
-            *{$myname . '::' . $m} = sub {
-                my $self = shift;
-                my $new  = shift;
-                $self->_accessor($m, $new);
-              }
-        }
-    }
+	foreach my $m (@datamethods) {
+		if (!defined &{$m}) {
+			Music::Tag->_make_accessor($m) 
+		}
+	}
 
-    my $me = $myname;
+    my $me = __PACKAGE__;
     $me =~ s/\:\:/\//g;
 
     foreach my $d (@INC) {

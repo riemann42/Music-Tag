@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 
-use Test::More tests => 161;
+use Test::More tests => 171;
 use 5.006;
 
 BEGIN { use_ok('Music::Tag') }
@@ -66,17 +66,39 @@ foreach my $meth (
 }
 
 foreach my $meth (
-    qw( bytes disc duration frames framesize frequency gaplessdata playcount postgap pregap rating albumrating  samplecount secs stereo tempo totaldiscs totaltracks vbr)
+    qw( bytes disc duration frames framesize frequency gaplessdata playcount postgap pregap rating albumrating  samplecount secs stereo tempo totaldiscs totaltracks )
   ) {
-    my $val = int(rand(1000));
+    my $val = int(rand(10))+1;
     ok($tag->$meth($val), 'auto write to ' . $meth);
     cmp_ok($tag->$meth, '==', $val, 'auto read from ' . $meth);
 }
 
+my %values = ();
+
 foreach my $meth (
-         qw(artist_end artist_start lastplayed mtime recordtime releasetime)) {
-    ok($tag->$meth('2009-07-12 01:10:10'), 'auto write to ' . $meth);
-    cmp_ok($tag->$meth, 'eq', '2009-07-12 01:10:10', 'auto read from' . $meth);
+	 qw(artist_end_epoch artist_start_epoch lastplayedepoch mepoch recordepoch releaseepoch)) {
+	 my $val = int(rand(1_800_000_000));
+	 $values{$meth} = $val;
+	 ok($tag->$meth($val), 'auto write to '. $meth);
+	 cmp_ok($tag->$meth, '==', $val, 'auto read from' . $meth);
+}
+
+foreach my $meth (
+	 qw(artist_end_date artist_start_date lastplayeddate mdate recorddate releasedate)) {
+	 my $me = $meth;
+	 my $md = $meth;
+	 $me =~ s/date/epoch/;
+	 $md =~ s/_date//;
+	 my @tm = gmtime($values{$me});
+	 cmp_ok($tag->$md, 'eq', sprintf('%04d-%02d-%02d', $tm[5]+1900, $tm[4]+1, $tm[3]), 'auto read from '. $md);
+}
+
+foreach my $meth (
+	 qw(artist_end_time artist_start_time lastplayedtime mtime recordtime releasetime)) {
+	 my $me = $meth;
+	 $me =~ s/time/epoch/;
+	 my @tm = gmtime($values{$me});
+	 cmp_ok($tag->$meth, 'eq', sprintf('%04d-%02d-%02d %02d:%02d:%02d', $tm[5]+1900, $tm[4]+1, $tm[3], $tm[2], $tm[1], $tm[0]), 'auto read from '. $meth);
 }
 
 foreach my $meth (qw(recorddate releasedate)) {
