@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 
-use Test::More tests => 33;
+use Test::More tests => 38;
 use 5.006;
 
 BEGIN { use_ok('Music::Tag') }
@@ -25,11 +25,12 @@ for my $tag ($tag1,$tag2) {
 	ok ( $tag->plugin('Generic')->tagchange('artist', 'Beethoven'), 'tagchanged 1'); 
 	ok ( $tag->plugin('Generic')->tagchange('album' ), 'tagchanged 2'); 
 	is ( $tag->artist(), 'Beethoven', 'artist read');
-	ok ( $tag->plugin('Generic')->simple_compare('A Simple Sentence', 'simple sentence'), 'Simple compare');
-	ok ( $tag->plugin('Generic')->simple_compare('A Simple Sentence', 'simple sentence'), 'Simple compare');
+	ok ( $tag->plugin('Generic')->simple_compare('A Simple Sentence', 'simple sentence'), 'Simple compare 1');
+	ok ( $tag->plugin('Generic')->simple_compare('A Simple Sentence', 'simple sentence'), 'Simple compare 2');
+	ok ( $tag->plugin('Generic')->simple_compare('A Simple Sentence', 'simple sentense',.9), 'Simple compare 3');
 
-
-	ok ( ! $tag->plugin('Generic')->simple_compare('A Simple Sentence', 'simple sentence are evel'), 'Simple compare fail');
+	ok ( ! $tag->plugin('Generic')->simple_compare('Notypo', 'No typos',.9), 'Simple compare 4');
+	ok ( ! $tag->plugin('Generic')->simple_compare('Notypo Simple Sentence', 'simple sentence are evel'), 'Simple compare fail');
 
 	ok ( $tag->plugin('Generic')->changed(1), 'Tag changed');
 
