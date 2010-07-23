@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 
-use Test::More tests => 38;
+use Test::More tests => 37;
 use 5.006;
 
 BEGIN { use_ok('Music::Tag') }

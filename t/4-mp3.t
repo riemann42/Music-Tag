@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 52;
+use Test::More tests => 54;
+use Digest::SHA1;
 eval { require Music::Tag::MP3 };
 plan(skip_all => 'Music::Tag::MP3 not installed; skipping') if $@;
 use File::Copy;
@@ -54,6 +55,10 @@ sub filetest {
 
         ok($tag->picture_exists, 'Picture Exists 1');
 
+		my $sha1 = Digest::SHA1->new();
+		$sha1->add($tag->picture->{_Data});
+		cmp_ok($sha1->hexdigest, 'eq', 'b2bf4b2f71bf01e12473dd0ebe295777127589f4', 'digest of picture matches');
+
         ok($tag->set_tag, 'set_tag: ' . $filetest);
 
         $tag->close();
@@ -67,6 +72,12 @@ sub filetest {
         }
 
         ok($tag2->picture_exists, 'Picture Exists 2');
+
+		$sha1 = Digest::SHA1->new();
+		$sha1->add($tag2->picture->{_Data});
+		cmp_ok($sha1->hexdigest, 'eq', 'b2bf4b2f71bf01e12473dd0ebe295777127589f4', 'digest of picture matches');
+
+
 
         $tag2->close();
         unlink($filetest);
