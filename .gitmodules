@@ -1,0 +1,21 @@
+[submodule "plugins/Music-Tag-Amazon"]
+	path = plugins/Music-Tag-Amazon
+	url = git@github.com:riemann42/Music-Tag-Amazon.git
+[submodule "plugins/Music-Tag-File"]
+	path = plugins/Music-Tag-File
+	url = git@github.com:riemann42/Music-Tag-File.git
+[submodule "plugins/Music-Tag-FLAC"]
+	path = plugins/Music-Tag-FLAC
+	url = git@github.com:riemann42/Music-Tag-FLAC.git
+[submodule "plugins/Music-Tag-M4A"]
+	path = plugins/Music-Tag-M4A
+	url = git@github.com:riemann42/Music-Tag-M4A.git
+[submodule "plugins/Music-Tag-MP3"]
+	path = plugins/Music-Tag-MP3
+	url = git@github.com:riemann42/Music-Tag-MP3.git
+[submodule "plugins/Music-Tag-MusicBrainz"]
+	path = plugins/Music-Tag-MusicBrainz
+	url = git@github.com:riemann42/Music-Tag-MusicBrainz.git
+[submodule "plugins/Music-Tag-OGG"]
+	path = plugins/Music-Tag-OGG
+	url = git@github.com:riemann42/Music-Tag-OGG.git
