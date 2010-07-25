@@ -15,6 +15,7 @@ WriteMakefile( NAME         => 'Music::Tag',
                               'Locale::Country'         => 2.07,
 							  'Test::More'				=> 0,
 							  'File::Copy'				=> 0,
+							  'Time::Local'				=> 1.1901,
                             },
              );
 
