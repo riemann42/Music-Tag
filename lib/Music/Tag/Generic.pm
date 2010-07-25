@@ -4,6 +4,7 @@ use warnings;
 our $VERSION = 0.36;
 use Encode;
 use vars qw($AUTOLOAD);
+use Scalar::Util qw(weaken);
 use Carp;
 # Copyright (c) 2007,2008,2009,2010 Edward Allen III. Some rights reserved.
 
@@ -74,6 +75,7 @@ sub info {
     my $val  = shift;
     if ( defined $val && ref $val ) {
         $self->{info} = $val;
+        weaken $self->{info};
     }
     return $self->{info};
 }

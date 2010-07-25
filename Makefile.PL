@@ -16,6 +16,7 @@ WriteMakefile( NAME         => 'Music::Tag',
 							  'Test::More'				=> 0,
 							  'File::Copy'				=> 0,
 							  'Time::Local'				=> 1.1901,
+							  'Scalar::Util'            => 1.21,
                             },
              );
 
