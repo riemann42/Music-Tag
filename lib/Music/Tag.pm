@@ -1835,6 +1835,8 @@ BEGIN {
 }
 
 sub DESTROY {
+	my $self = shift;
+    $self->_foreach_plugin(sub { delete $_[0]->{info} });
 }
 
 1;

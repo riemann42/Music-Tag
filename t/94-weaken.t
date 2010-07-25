@@ -21,6 +21,7 @@ my $test = sub {
 	$tag->get_tag;
 	$tag->set_tag;
 	$tag->close;
+	return $tag;
 };
 
 ok(! leaks($test), 'No Memory Leaks for Option Tag');

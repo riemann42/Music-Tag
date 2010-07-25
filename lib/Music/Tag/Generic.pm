@@ -351,7 +351,7 @@ sub default_options { return {} }
 sub DESTROY {
     my $self = shift;
     if ( exists $self->{info} ) {
-        delete $self->{info};
+		delete $self->{info};
     }
 	return;
 }
