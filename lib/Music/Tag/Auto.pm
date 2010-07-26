@@ -11,41 +11,6 @@ our $VERSION = 0.36;
 # License or the Artistic License, as specified in the README file.
 #
 
-
-
-=pod
-
-=head1 NAME
-
-Music::Tag::Auto - Plugin module for Music::Tag to load other plugins by file extension.
-
-=head1 SYNOPSIS
-
-	use Music::Tag
-
-	my $filename = "/var/lib/music/artist/album/track.flac";
-
-	my $info = Music::Tag->new($filename, { quiet => 1 }, "Auto");
-
-	$info->get_info();
-	print "Artist is ", $info->artist;
-
-
-=head1 DESCRIPTION
-
-Music::Tag::Auto is loaded automatically in Music::Tag .3 and newer to load other plugins.
-
-=head1 REQUIRED VALUES
-
-None.
-
-=head1 SET VALUES
-
-None.
-
-=cut
-
-
 sub default_options {
 	{
 		autoplugin => {
@@ -94,6 +59,38 @@ sub new {
         return undef;
     }
 }
+
+1;
+__END__
+=pod
+
+=head1 NAME
+
+Music::Tag::Auto - Plugin module for Music::Tag to load other plugins by file extension.
+
+=head1 SYNOPSIS
+
+	use Music::Tag
+
+	my $filename = "/var/lib/music/artist/album/track.flac";
+
+	my $info = Music::Tag->new($filename, { quiet => 1 }, "Auto");
+
+	$info->get_info();
+	print "Artist is ", $info->artist;
+
+
+=head1 DESCRIPTION
+
+Music::Tag::Auto is loaded automatically in Music::Tag .3 and newer to load other plugins.
+
+=head1 REQUIRED VALUES
+
+None.
+
+=head1 SET VALUES
+
+None.
 
 =head1 OPTIONS
 
@@ -180,6 +177,3 @@ Copyright (c) 2007 Edward Allen III. Some rights reserved.
 
 
 
-=cut
-
-1;

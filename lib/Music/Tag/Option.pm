@@ -12,6 +12,23 @@ use base qw(Music::Tag::Generic);
 #
 
 
+
+sub set_tag {
+    my $self = shift;
+    my $okmethods = { map { lc($_) => 1 } @{ $self->info->datamethods } };
+    while ( my ( $k, $v ) = each %{ $self->options } ) {
+        if ( ( defined $v ) and ( $okmethods->{ lc($k) } ) ) {
+            my $method = lc($k);
+            $self->info->$method($v);
+            $self->tagchange($method);
+        }
+    }
+}
+
+sub get_tag { set_tag(@_); }
+
+1;
+__END__
 =pod
 
 =head1 NAME
@@ -47,23 +64,6 @@ None.
 =over 4
 
 =item Any value you would like can be set this way.
-
-=cut
-
-
-sub set_tag {
-    my $self = shift;
-    my $okmethods = { map { lc($_) => 1 } @{ $self->info->datamethods } };
-    while ( my ( $k, $v ) = each %{ $self->options } ) {
-        if ( ( defined $v ) and ( $okmethods->{ lc($k) } ) ) {
-            my $method = lc($k);
-            $self->info->$method($v);
-            $self->tagchange($method);
-        }
-    }
-}
-
-sub get_tag { set_tag(@_); }
 
 =back
 
@@ -129,11 +129,5 @@ http://www.gnu.org/copyleft/gpl.html.
 
 =head1 COPYRIGHT
 
-Copyright (c) 2007 Edward Allen III. Some rights reserved.
+Copyright (c) 2007,2010 Edward Allen III. Some rights reserved.
 
-
-
-
-=cut
-
-1;

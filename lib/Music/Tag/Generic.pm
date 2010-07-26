@@ -13,44 +13,6 @@ use Carp;
 # License or the Artistic License, as specified in the README file.
 #
 
-=pod
-
-=head1 NAME
-
-Music::Tag::Generic - Parent Class for Music::Tag objects
-
-=head1 SYNOPSIS
-
-    package Music::Tag::SuperMusic;
-
-	use base qw(Music::Tag::Generic);
-
-	sub set_tag {
-		my $self = shift;
-		$self->info->artist($self->info->artist . " is super");
-		return $self->info;
-	}
-
-	1;
-
-=head1 DESCRIPTION
-
-Base class.  See L<Music::Tag|Music::Tag>.
-
-=pod
-
-=head1 PLUGINS
-
-All plugins should set @ISA to include Music::Tag::Generic and contain one or more of the following methods:
-
-=over 4
-
-=item B<new()>
-
-Set in template. If you override, it should take as options a reference to a Music::Tag object and an href of options. 
-
-=cut
-
 sub new {
     my $class   = shift;
     my $parent  = shift;
@@ -62,14 +24,6 @@ sub new {
     return $self;
 }
 
-=pod
-
-=item B<info()>
-
-Should return a reference to the associated Music::Tag object. If passed an object, should set the associated Music::Tag object to it.
-
-=cut
-
 sub info {
     my $self = shift;
     my $val  = shift;
@@ -80,49 +34,17 @@ sub info {
     return $self->{info};
 }
 
-=item B<get_tag()>
-
-Populates the data in the Music::Tag object.
-
-=cut
-
 sub get_tag {
 }
-
-=item B<set_tag()>
-
-Optional method to save info.
-
-=cut
 
 sub set_tag {
 }
 
-=pod
-
-=item B<strip_tag>
-
-Optional method to remove info. 
-
-=cut
-
 sub strip_tag {
 }
 
-=item B<close>
-
-Optional method to close open file handles.
-
-=cut
-
 sub close {
 }
-
-=item B<tagchange>
-
-Inherited method that can be called to announce a data-value change from what is read on file. Used by secondary plugins like Amazon, MusicBrainz, and File.  This is preferred to using C<<$self->info->changed(1)>>.
-
-=cut
 
 sub tagchange {
     my $self = shift;
@@ -131,12 +53,6 @@ sub tagchange {
     $self->status( $self->info->_tenprint( $tag, 'bold blue', 15 ) . '"' . $to . '"' );
     return $self->info->changed(1);
 }
-
-=item B<simplify>
-
-A useful method for simplifying artist names and titles. Takes a string, and returns a sting with no whitespace.  Also removes accents (if Text::Unaccent::PurePerl is available) and converts numbers like 1,2,3 as words to one, two, three... (English is used here.  Let me know if it would be helpful to change this. I do not change words to numbers because I prefer sorting "5 Star" under f).  Removes known articles, such as a, the, an, le les, de if they are not at the end of a string. 
-
-=cut
 
 sub simplify {
     my $self = shift;
@@ -193,13 +109,6 @@ sub simplify {
     return $text;
 }
 
-=item B<simple_compare> ($a, $b, $required_percent)
-
-Returns 1 on match, 0 on no match, and -1 on approximate match.   $required_percent is
-a value from 0...1 which is the percentage of similarity required for match.  
-
-=cut
-
 sub simple_compare {
     my $self            = shift;
     my $a               = shift;
@@ -249,24 +158,11 @@ sub simple_compare {
     return 0;
 }
 
-=item B<status>
-
-Inherited method to print a pretty status message. If first argument is a number, assumes this is required
-verbosity. 
-
-=cut
-
 sub status {
     my $self = shift;
     $self->info->status( ref($self), @_ );
 	return;
 }
-
-=item B<error>
-
-Inherited method to print an error message.
-
-=cut
 
 sub error {
     my $self = shift;
@@ -274,24 +170,10 @@ sub error {
 	return;
 }
 
-=item B<changed>
-
-Same as $self->info->changed().  Please use L<tagchange> method instead.
-
-=cut
-
 sub changed {
     my $self = shift;
     return $self->info->changed(@_);
 }
-
-=item B<wav_out()>
-
-If plugin is for a media tag, return stream of wav to filehandle $fh. 
-
-Return True on success, False on failure, undef if not supported.
-
-=cut
 
 sub wav_out {
     my $self = shift;
@@ -324,12 +206,6 @@ sub wav_out {
     return;
 }
 
-=item B<options>
-
-Returns a hashref of options (or sets options, just like Music::Tag method).
-
-=cut
-
 sub options {
     my $self = shift;
     unless ( exists $self->{_options} ) {
@@ -337,14 +213,6 @@ sub options {
     }
     return $self->{_options}->options(@_);
 }
-
-=pod
-
-=item B<default_options>
-
-Method should return default options.
-
-=cut
 
 sub default_options { return {} }
 
@@ -357,6 +225,109 @@ sub DESTROY {
 }
 
 1;
+
+__END__
+=pod
+
+=head1 NAME
+
+Music::Tag::Generic - Parent Class for Music::Tag objects
+
+=head1 SYNOPSIS
+
+    package Music::Tag::SuperMusic;
+
+	use base qw(Music::Tag::Generic);
+
+	sub set_tag {
+		my $self = shift;
+		$self->info->artist($self->info->artist . " is super");
+		return $self->info;
+	}
+
+	1;
+
+=head1 DESCRIPTION
+
+Base class.  See L<Music::Tag|Music::Tag>.
+
+=pod
+
+=head1 PLUGINS
+
+All plugins should set @ISA to include Music::Tag::Generic and contain one or more of the following methods:
+
+=over 4
+
+=item B<new()>
+
+Set in template. If you override, it should take as options a reference to a Music::Tag object and an href of options. 
+
+=pod
+
+=item B<info()>
+
+Should return a reference to the associated Music::Tag object. If passed an object, should set the associated Music::Tag object to it.
+
+=item B<get_tag()>
+
+Populates the data in the Music::Tag object.
+
+=item B<set_tag()>
+
+Optional method to save info.
+
+=pod
+
+=item B<strip_tag>
+
+Optional method to remove info. 
+
+=item B<close>
+
+Optional method to close open file handles.
+
+=item B<tagchange>
+
+Inherited method that can be called to announce a data-value change from what is read on file. Used by secondary plugins like Amazon, MusicBrainz, and File.  This is preferred to using C<<$self->info->changed(1)>>.
+
+=item B<simplify>
+
+A useful method for simplifying artist names and titles. Takes a string, and returns a sting with no whitespace.  Also removes accents (if Text::Unaccent::PurePerl is available) and converts numbers like 1,2,3 as words to one, two, three... (English is used here.  Let me know if it would be helpful to change this. I do not change words to numbers because I prefer sorting "5 Star" under f).  Removes known articles, such as a, the, an, le les, de if they are not at the end of a string. 
+
+=item B<simple_compare> ($a, $b, $required_percent)
+
+Returns 1 on match, 0 on no match, and -1 on approximate match.   $required_percent is
+a value from 0...1 which is the percentage of similarity required for match.  
+
+=item B<status>
+
+Inherited method to print a pretty status message. If first argument is a number, assumes this is required
+verbosity. 
+
+=item B<error>
+
+Inherited method to print an error message.
+
+=item B<changed>
+
+Same as $self->info->changed().  Please use L<tagchange> method instead.
+
+=item B<wav_out()>
+
+If plugin is for a media tag, return stream of wav to filehandle $fh. 
+
+Return True on success, False on failure, undef if not supported.
+
+=item B<options>
+
+Returns a hashref of options (or sets options, just like Music::Tag method).
+
+=pod
+
+=item B<default_options>
+
+Method should return default options.
 
 =back
 
@@ -376,6 +347,4 @@ Copyright (c) 2007,2008 Edward Allen III. Some rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
-
-=cut
 
