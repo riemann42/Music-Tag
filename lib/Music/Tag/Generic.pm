@@ -36,6 +36,15 @@ sub info {
     return $self->{info};
 }
 
+sub required_values {
+}
+
+sub set_values {
+}
+
+sub saved_values {
+}
+
 sub get_tag {
 }
 
@@ -279,39 +288,49 @@ Populates the data in the Music::Tag object.
 
 Optional method to save info.
 
-=pod
+=item B<required_values()>
 
-=item B<strip_tag>
+Optional method returns a list of required data values required for L<Music::Tag::Generic/get_tag()>.
+
+=item B<set_values()>
+
+Optional method (for now) returns a list of data values that can be set with L<Music::Tag::Generic/get_tag()>.
+
+=item B<saved_values()>
+
+Optional method returns a list of data values that can be saved with L<Music::Tag::Generic/set_tag()>.
+
+=item B<strip_tag()>
 
 Optional method to remove info. 
 
-=item B<close>
+=item B<close()>
 
 Optional method to close open file handles.
 
-=item B<tagchange>
+=item B<tagchange()>
 
 Inherited method that can be called to announce a data-value change from what is read on file. Used by secondary plugins like Amazon, MusicBrainz, and File.  This is preferred to using C<<$self->info->changed(1)>>.
 
-=item B<simplify>
+=item B<simplify()>
 
 A useful method for simplifying artist names and titles. Takes a string, and returns a sting with no whitespace.  Also removes accents (if Text::Unaccent::PurePerl is available) and converts numbers like 1,2,3 as words to one, two, three... (English is used here.  Let me know if it would be helpful to change this. I do not change words to numbers because I prefer sorting "5 Star" under f).  Removes known articles, such as a, the, an, le les, de if they are not at the end of a string. 
 
-=item B<simple_compare> ($a, $b, $required_percent)
+=item B<simple_compare>($a, $b, $required_percent)
 
 Returns 1 on match, 0 on no match, and -1 on approximate match.   $required_percent is
 a value from 0...1 which is the percentage of similarity required for match.  
 
-=item B<status>
+=item B<status()>
 
 Inherited method to print a pretty status message. If first argument is a number, assumes this is required
 verbosity. 
 
-=item B<error>
+=item B<error()>
 
 Inherited method to print an error message.
 
-=item B<changed>
+=item B<changed()>
 
 Same as $self->info->changed().  Please use L<tagchange> method instead.
 
@@ -321,7 +340,7 @@ If plugin is for a media tag, return stream of wav to filehandle $fh.
 
 Return True on success, False on failure, undef if not supported.
 
-=item B<options>
+=item B<options()>
 
 Returns a hashref of options (or sets options, just like Music::Tag method).
 
