@@ -1,7 +1,7 @@
 package Music::Tag::Option;
 use strict;
 use warnings;
-our $VERSION = 0.36;
+our $VERSION = .40_01;
 use base qw(Music::Tag::Generic);
 
 # Copyright (c) 2006 Edward Allen III. Some rights reserved.

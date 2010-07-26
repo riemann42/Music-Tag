@@ -8,7 +8,7 @@ use Config::Options;
 use Pod::Usage;
 use utf8;
 
-our $VERSION  = .34;
+our $VERSION  = .40_01;
 our $options  = Config::Options->new();
 our $BASENAME = "musictag";
 if ( $^X =~ /\/*([^\/]*)$/ ) {
