@@ -172,3 +172,15 @@ lastplayedtime
 mdate
 mepoch
 
+github
+ogg
+vorbis
+vorbiscomment
+MPEG
+QuickTime
+musicbrainz
+Apic
+TFLT
+USLT
+apic
+unicode

@@ -2,16 +2,18 @@ package Music::Tag::Generic;
 use strict;
 use warnings;
 our $VERSION = 0.36;
-use Encode;
-use vars qw($AUTOLOAD);
-use Scalar::Util qw(weaken);
-use Carp;
+
 # Copyright (c) 2007,2008,2009,2010 Edward Allen III. Some rights reserved.
 
 #
 # You may distribute under the terms of either the GNU General Public
 # License or the Artistic License, as specified in the README file.
 #
+
+use Encode;
+use vars qw($AUTOLOAD);
+use Scalar::Util qw(weaken);
+use Carp;
 
 sub new {
     my $class   = shift;

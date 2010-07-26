@@ -1,8 +1,8 @@
 package Music::Tag::Auto;
 use strict;
 use warnings;
-use base qw(Music::Tag::Generic);
 our $VERSION = 0.36;
+use base qw(Music::Tag::Generic);
 
 # Copyright (c) 2006 Edward Allen III. Some rights reserved.
 

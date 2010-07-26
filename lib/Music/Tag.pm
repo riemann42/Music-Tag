@@ -1759,7 +1759,6 @@ Semi-internal method for printing errors.
 
 =back
 
-
 =head1 PLUGINS
 
 See L<Music::Tag::Generic|Music::Tag::Generic> for base class for plugins.
@@ -1784,7 +1783,7 @@ L<Text::Unaccent::PurePerl>, L<Lingua::EN::Inflect>
 
 Source is available at github: L<http://github.com/riemann42/Music-Tag|http://github.com/riemann42/Music-Tag>.
 
-=head1 BUGTRACKING
+=head1 BUG TRACKING
 
 Please use github for bug tracking: L<http://github.com/riemann42/Music-Tag/issues|http://github.com/riemann42/Music-Tag/issues>.
 
