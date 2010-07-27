@@ -1,3 +1,22 @@
+	Release Name: 0.40_01 ( Normalized Version number accross plugins)
+		*	Started using git and github
+
+		* 	Added capability methods to plugins (required_values, set_values
+			and saved_values).  Not sure what to do with them now...
+
+		*	Significant improvment in testing, which found bugs that
+			were fixed.
+
+			* Tracknum and Discnum didn't work correctly
+
+			* Epoch times failed completly.
+
+		*	Fixed severe memory leak by with weaken
+
+		*	Changed accessor modules to not use Autoload
+
+		*	Fixed a few open file handles that didn't have a close.
+
     Release Name: 0.33
         *   Revised POD (thanks Ivan Tubert-Brohman for Test::Spelling!)
 
