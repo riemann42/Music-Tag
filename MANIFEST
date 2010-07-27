@@ -2,7 +2,6 @@ Artistic
 bin/musictag
 CHANGES
 Copying
-Debian_CPANTS.txt
 eg/printinfo.pl
 lib/Music/Tag.pm
 lib/Music/Tag/Auto.pm
@@ -20,8 +19,6 @@ t/5-generic.t
 t/6-unaccent.t
 t/97-pod.t
 t/98-pod-coverage.t
-t/beethoven.jpg
-t/elise.mp3
 t/fake.music
 t/MusicTagTest.pm
 t/options.conf
