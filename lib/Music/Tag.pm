@@ -1,7 +1,7 @@
 package Music::Tag;
 use strict;
 use warnings;
-our $VERSION = .40_01;
+our $VERSION = .40_02;
 
 # Copyright (c) 2007,2008,2009 Edward Allen III. Some rights reserved.
 
