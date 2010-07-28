@@ -27,11 +27,12 @@ for my $tag ($tag1,$tag2) {
 	is ( $tag->artist(), 'Beethoven', 'artist read');
 	ok ( $tag->plugin('Generic')->simple_compare('A Simple Sentence', 'simple sentence'), 'Simple compare 1');
 	ok ( $tag->plugin('Generic')->simple_compare('A Simple Sentence', 'simple sentence'), 'Simple compare 2');
-	ok ( $tag->plugin('Generic')->simple_compare('A Simple Sentence', 'simple sentense',.9), 'Simple compare 3');
-
-	ok ( ! $tag->plugin('Generic')->simple_compare('Notypo', 'No typos',.9), 'Simple compare 4');
+	SKIP: { 
+		skip "No Levenshtein Module", 2 unless ( $tag->options->{'LevenshteinXS'} || $tag->options->{'Levenshtein'}); 
+		ok ( $tag->plugin('Generic')->simple_compare('A Simple Sentence', 'simple sentense',.9), 'Simple compare 3');
+		ok ( $tag->plugin('Generic')->simple_compare('Notypo', 'No typos',.8), 'Simple compare 4');
+	}
 	ok ( ! $tag->plugin('Generic')->simple_compare('Notypo Simple Sentence', 'simple sentence are evel'), 'Simple compare fail');
-
 	ok ( $tag->plugin('Generic')->changed(1), 'Tag changed');
 
 	ok ( $tag->plugin('Generic')->options->{'hello'} = 'hello', 'set option');

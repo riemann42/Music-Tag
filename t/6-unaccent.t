@@ -1,11 +1,16 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests =>2;
+use Test::More; 
 use utf8;
 eval "use Text::Unaccent::PurePerl";
-plan skip_all => "Text::Unaccent::PurePerl required for testing accent changes" if $@;
+if ($@) {
+	plan skip_all => "Text::Unaccent::PurePerl required for testing accent changes";
+}
+else	{
+	plan tests => 1;
+}
 
-BEGIN { use_ok('Music::Tag') }
+use Music::Tag;
 
 
 my $tag = Music::Tag->new('t/fake.music',
