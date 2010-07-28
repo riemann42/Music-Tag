@@ -19,3 +19,6 @@
 [submodule "Music-Tag-OGG"]
 	path = Music-Tag-OGG
 	url = git@github.com:riemann42/Music-Tag-OGG.git
+[submodule "Music-Tag-LyricsFetcher"]
+	path = Music-Tag-LyricsFetcher
+	url = git@github.com:riemann42/Music-Tag-LyricsFetcher.git
