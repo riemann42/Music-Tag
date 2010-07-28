@@ -1,0 +1,15 @@
+Release Name: 0.40_01
+============================
+* Normalized to .40_01
+* Changed to use Text::Levenshtein
+* Changed to use Music::Tag::LyricsFetcher
+* Updated README
+
+Release Name: 0.02
+============================
+* Added Config::Options
+* Added Tree::Simple
+
+Release Name: 0.01
+============================
+* Initial Public Release

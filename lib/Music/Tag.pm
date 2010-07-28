@@ -51,7 +51,6 @@ sub LoadOptions {
     }
 }
 
-
 sub new {
     my $class    = shift;
     my $filename = shift;
@@ -73,36 +72,36 @@ sub new {
         $self->{changed} = 0;
     }
 
-	$self->_test_modules();
+    $self->_test_modules();
 
     if ($plugin) {
         $self->add_plugin($plugin, $options);
         return $self;
     }
+
     #else {
     #    return $self->auto_plugin($options);
     #}
 }
 
 sub _test_modules {
-	my $self = shift;
-	my %module_map = ( 
-		'ANSIColor' => 'Term::ANSIColor',
-        'LevenshteinXS' => 'Text::LevenshteinXS',
-        'Levenshtein' => 'Levenshtein',
-		'Unaccent' => 'Text::Unaccent::PurePerl',
-		'Inflect'  => 'Lingua::EN::Inflect',
-    );
-	while (my ($k,$v) = each %module_map) {
-		if (   ($self->options->{$k})
-			&& ($self->_has_module($v))) {
-			$self->options->{$k} = 1;
-		}
-		else {
-			$self->options->{$k} = 0;
-		}
-	}
-	return;
+    my $self = shift;
+    my %module_map = ('ANSIColor'     => 'Term::ANSIColor',
+                      'LevenshteinXS' => 'Text::LevenshteinXS',
+                      'Levenshtein'   => 'Levenshtein',
+                      'Unaccent'      => 'Text::Unaccent::PurePerl',
+                      'Inflect'       => 'Lingua::EN::Inflect',
+                     );
+    while (my ($k, $v) = each %module_map) {
+        if (   ($self->options->{$k})
+            && ($self->_has_module($v))) {
+            $self->options->{$k} = 1;
+        }
+        else {
+            $self->options->{$k} = 0;
+        }
+    }
+    return;
 }
 
 sub _has_module {
@@ -283,9 +282,9 @@ sub datamethods {
     if ($add) {
         my $new = lc($add);
         $DataMethods{$new} = 1;
-		if (!defined &{$new}) {
-			$self->_make_accessor($new);
-		}
+        if (!defined &{$new}) {
+            $self->_make_accessor($new);
+        }
     }
     return [keys %DataMethods];
 }
@@ -375,15 +374,14 @@ sub _isutf8 {
     return $in;
 }
 
-
 sub _make_accessor {
-	my ($self,$m) = @_;
-	no strict 'refs';
-	*{__PACKAGE__ . '::' . $m} = sub {
-		my ($self,$new) = @_;
-		$self->_accessor($m, $new);
-	 };
-	 return;
+    my ($self, $m) = @_;
+    no strict 'refs';
+    *{__PACKAGE__ . '::' . $m} = sub {
+        my ($self, $new) = @_;
+        $self->_accessor($m, $new);
+    };
+    return;
 }
 
 sub _accessor {
@@ -467,7 +465,8 @@ sub _epochaccessor {
       ) {
         eval {
             $ret = Time::Local::timegm($6 || 0, $5 || 0, $4 || 12, $3 || 1,
-                                       ($2 - 1) || 0, ($1 - 1900));
+                                       ($2 - 1) || 0,
+                                       ($1 - 1900));
         };
         $self->error($@) if $@;
     }
@@ -500,25 +499,25 @@ sub _dateaccessor {
 }
 
 sub _make_time_accessor {
-	my $self = shift;
-	my $m = shift;
-	my $t = shift || $m.'time';
-	my $d = shift || $m.'date';
-	my $e = shift || $m.'epoch';
-	no strict 'refs';
-	*{__PACKAGE__ . '::' . $t} = sub {
-		my ($self,$new) = @_;
-		$self->_timeaccessor(uc($m), $new);
-	 };
-	*{__PACKAGE__ . '::' . $d} = sub {
-		my ($self,$new) = @_;
-		$self->_dateaccessor(uc($m), $new);
-	 };
-	*{__PACKAGE__ . '::' . $e} = sub {
-		my ($self,$new) = @_;
-		$self->_epochaccessor(uc($m), $new);
-	 };
-	 return;
+    my $self = shift;
+    my $m    = shift;
+    my $t    = shift || $m . 'time';
+    my $d    = shift || $m . 'date';
+    my $e    = shift || $m . 'epoch';
+    no strict 'refs';
+    *{__PACKAGE__ . '::' . $t} = sub {
+        my ($self, $new) = @_;
+        $self->_timeaccessor(uc($m), $new);
+    };
+    *{__PACKAGE__ . '::' . $d} = sub {
+        my ($self, $new) = @_;
+        $self->_dateaccessor(uc($m), $new);
+    };
+    *{__PACKAGE__ . '::' . $e} = sub {
+        my ($self, $new) = @_;
+        $self->_epochaccessor(uc($m), $new);
+    };
+    return;
 }
 
 sub _ordinalaccessor {
@@ -871,7 +870,6 @@ sub error {
     return;
 }
 
-
 BEGIN {
     $Music::Tag::DefaultOptions =
       Config::Options->new(
@@ -886,34 +884,36 @@ BEGIN {
          }
       );
     my @datamethods =
-      qw(album album_type albumartist albumartist_sortname albumid appleid 
-	     artist artist_end artist_start artist_start_time artist_start_epoch 
-		 artist_end_time artist_end_epoch artist_type artistid asin bitrate 
-		 booklet bytes codec comment compilation composer copyright country 
-		 countrycode disc discnum disctitle duration encoded_by encoder filename
-		 frames framesize frequency gaplessdata genre ipod ipod_dbid ipod_location
-		 ipod_trackid label lastplayedtime lastplayeddate lastplayedepoch 
-		 lyrics mb_albumid mb_artistid mb_trackid mip_puid mtime mdate mepoch 
-		 originalartist performer path picture playcount postgap pregap rating 
-		 albumrating recorddate recordtime releasedate releasetime recordepoch 
-		 releaseepoch samplecount secs songid sortname stereo tempo title 
-		 totaldiscs totaltracks track tracknum url user vbr year upc ean jan
-		 filetype mip_fingerprint artisttags albumtags tracktags);
+      qw(album album_type albumartist albumartist_sortname albumid appleid
+      artist artist_end artist_start artist_start_time artist_start_epoch
+      artist_end_time artist_end_epoch artist_type artistid asin bitrate
+      booklet bytes codec comment compilation composer copyright country
+      countrycode disc discnum disctitle duration encoded_by encoder filename
+      frames framesize frequency gaplessdata genre ipod ipod_dbid ipod_location
+      ipod_trackid label lastplayedtime lastplayeddate lastplayedepoch
+      lyrics mb_albumid mb_artistid mb_trackid mip_puid mtime mdate mepoch
+      originalartist performer path picture playcount postgap pregap rating
+      albumrating recorddate recordtime releasedate releasetime recordepoch
+      releaseepoch samplecount secs songid sortname stereo tempo title
+      totaldiscs totaltracks track tracknum url user vbr year upc ean jan
+      filetype mip_fingerprint artisttags albumtags tracktags);
     %Music::Tag::DataMethods = map { $_ => 1 } @datamethods;
     @Music::Tag::PLUGINS = ();
- 
-	Music::Tag->_make_time_accessor('record'); 
-	Music::Tag->_make_time_accessor('release'); 
-	Music::Tag->_make_time_accessor('m');
-	Music::Tag->_make_time_accessor('lastplayed'); 
-	Music::Tag->_make_time_accessor('artist_start','artist_start_time','artist_start','artist_start_epoch'); 
-	Music::Tag->_make_time_accessor('artist_end','artist_end_time','artist_end','artist_end_epoch'); 
 
-	foreach my $m (@datamethods) {
-		if (!defined &{$m}) {
-			Music::Tag->_make_accessor($m) 
-		}
-	}
+    Music::Tag->_make_time_accessor('record');
+    Music::Tag->_make_time_accessor('release');
+    Music::Tag->_make_time_accessor('m');
+    Music::Tag->_make_time_accessor('lastplayed');
+    Music::Tag->_make_time_accessor('artist_start', 'artist_start_time',
+                                    'artist_start', 'artist_start_epoch');
+    Music::Tag->_make_time_accessor('artist_end', 'artist_end_time',
+                                    'artist_end', 'artist_end_epoch');
+
+    foreach my $m (@datamethods) {
+        if (!defined &{$m}) {
+            Music::Tag->_make_accessor($m);
+        }
+    }
 
     my $me = __PACKAGE__;
     $me =~ s/\:\:/\//g;
@@ -933,7 +933,7 @@ BEGIN {
 }
 
 sub DESTROY {
-	my $self = shift;
+    my $self = shift;
     $self->_foreach_plugin(sub { delete $_[0]->{info} });
 }
 
