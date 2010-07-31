@@ -1,5 +1,6 @@
 package Bundle::Music::Tag;
-$VERSION = '0.02';
+use strict;
+our $VERSION = '0.40_02';
 1;
 __END__
 
@@ -53,7 +54,7 @@ Edward Allen, ealleniii _at_ cpan _dot_ org
 
 =head1 LICENSE
 
-See tbe individual modules for full licence information.
+See the individual modules for full license information.
 
 =head1 SEE ALSO
 

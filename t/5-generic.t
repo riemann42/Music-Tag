@@ -22,8 +22,8 @@ for my $tag ($tag1,$tag2) {
 	ok(! $tag->plugin('Generic')->set_tag, 'set_tag called');
 	ok ( $tag->artist('Beethoven'), 'artist set');
 	ok ( $tag->album('GPL'), 'album set');
-	ok ( $tag->plugin('Generic')->tagchange('artist', 'Beethoven'), 'tagchanged 1'); 
-	ok ( $tag->plugin('Generic')->tagchange('album' ), 'tagchanged 2'); 
+	ok ( $tag->plugin('Generic')->tagchange('artist', 'Beethoven'), 'tagchange 1'); 
+	ok ( $tag->plugin('Generic')->tagchange('album' ), 'tagchange 2'); 
 	is ( $tag->artist(), 'Beethoven', 'artist read');
 	ok ( $tag->plugin('Generic')->simple_compare('A Simple Sentence', 'simple sentence'), 'Simple compare 1');
 	ok ( $tag->plugin('Generic')->simple_compare('A Simple Sentence', 'simple sentence'), 'Simple compare 2');

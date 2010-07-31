@@ -1,7 +1,7 @@
 package Music::Tag;
 use strict;
 use warnings;
-our $VERSION = .40_02;
+use version; our $VERSION = qv('.4003');
 
 # Copyright (c) 2007,2008,2009 Edward Allen III. Some rights reserved.
 
@@ -18,15 +18,26 @@ use Config::Options;
 use Digest::SHA1;
 use Music::Tag::Generic;
 use Time::Local;
+use IO::File;
+use IO::Dir;
+use File::stat;
+use Readonly;
 use utf8;
-use vars qw(%DataMethods);
+
+#use vars qw(%DataMethods);
+my %DataMethods;
+my $DefaultOptions;
+my ($SHA1_SIZE, $SLURP_SIZE, $TENPRINT_SIZE);
+Readonly::Scalar $SHA1_SIZE     => 4 * 4096;
+Readonly::Scalar $SLURP_SIZE    => 1024;
+Readonly::Scalar $TENPRINT_SIZE => 12;
 
 sub available_plugins {
     my $self  = shift;
     my $check = shift;
     if ($check) {
         foreach (@Music::Tag::PLUGINS) {
-            if ($check eq $_) {
+            if ( $check eq $_ ) {
                 return 1;
             }
         }
@@ -37,17 +48,17 @@ sub available_plugins {
 
 sub default_options {
     my $self = shift;
-    return $Music::Tag::DefaultOptions;
+    return $DefaultOptions;
 }
 
 sub LoadOptions {
     my $self    = shift;
     my $optfile = shift;
-    if (ref $self) {
+    if ( ref $self ) {
         return $self->options->fromfile_perl($optfile);
     }
     elsif ($self) {
-        return $Music::Tag::DefaultOptions->fromfile_perl($optfile);
+        return $DefaultOptions->fromfile_perl($optfile);
     }
 }
 
@@ -55,12 +66,13 @@ sub new {
     my $class    = shift;
     my $filename = shift;
     my $options  = shift || {};
-    my $plugin   = shift || "Auto";
+    my $plugin   = shift || 'Auto';
     my $data     = shift || {};
-    my $self     = {};
+
+    my $self = {};
     $self->{data} = $data;
-    if (ref $class) {
-        my $clone = {%$class};
+    if ( ref $class ) {
+        my $clone = { %{$class} };
         bless $clone, ref $class;
         return $clone;
     }
@@ -74,27 +86,23 @@ sub new {
 
     $self->_test_modules();
 
-    if ($plugin) {
-        $self->add_plugin($plugin, $options);
-        return $self;
-    }
+    $self->add_plugin( $plugin, $options );
+    return $self;
 
-    #else {
-    #    return $self->auto_plugin($options);
-    #}
 }
 
 sub _test_modules {
-    my $self = shift;
-    my %module_map = ('ANSIColor'     => 'Term::ANSIColor',
-                      'LevenshteinXS' => 'Text::LevenshteinXS',
-                      'Levenshtein'   => 'Levenshtein',
-                      'Unaccent'      => 'Text::Unaccent::PurePerl',
-                      'Inflect'       => 'Lingua::EN::Inflect',
-                     );
-    while (my ($k, $v) = each %module_map) {
-        if (   ($self->options->{$k})
-            && ($self->_has_module($v))) {
+    my $self       = shift;
+    my %module_map = (
+        'ANSIColor'     => 'Term::ANSIColor',
+        'LevenshteinXS' => 'Text::LevenshteinXS',
+        'Levenshtein'   => 'Levenshtein',
+        'Unaccent'      => 'Text::Unaccent::PurePerl',
+        'Inflect'       => 'Lingua::EN::Inflect',
+    );
+    while ( my ( $k, $v ) = each %module_map ) {
+        if (   ( $self->options->{$k} )
+            && ( $self->_has_module($v) ) ) {
             $self->options->{$k} = 1;
         }
         else {
@@ -107,15 +115,14 @@ sub _test_modules {
 sub _has_module {
     my $self    = shift;
     my $module  = shift;
-    my $modfile = $module . ".pm";
+    my $modfile = $module . '.pm';
     $modfile =~ s/\:\:/\//g;
-    eval { require $modfile };
-    if ($@) {
-        $self->status(1, "Not loading $module: " . $@);
-        return 0;
+    if ( eval { require $modfile; 1 } ) {
+        return 1;
     }
     else {
-        return 1;
+        $self->status( 1, "Not loading $module: " . $@ );
+        return 0;
     }
 }
 
@@ -126,39 +133,41 @@ sub add_plugin {
     my $options = $self->options->clone;
     $options->merge($opts);
     my $type = shift || 0;
-
     my $ref;
-    if (ref $object) {
+    if ( ref $object ) {
         $ref = $object;
         $ref->info($self);
         $ref->options($options);
     }
     else {
-        my ($plugin, $popts) = split(":", $object);
-        if ($self->available_plugins($plugin)) {
+        my ( $plugin, $popts ) = split( /:/, $object );
+        if ( $self->available_plugins($plugin) ) {
             if ($popts) {
-                my @opts = split(/[;]/, $popts);
+                my @opts = split( /[;]/, $popts );
                 foreach (@opts) {
-                    my ($k, $v) = split("=", $_);
-                    $options->options($k, $v);
+                    my ( $k, $v ) = split( /=/, $_ );
+                    $options->options( $k, $v );
                 }
             }
-            eval {
-                unless ($plugin =~ /::/) {
-                    $plugin = "Music::Tag::" . $plugin;
+            if (!eval {
+                    if ( not $plugin =~ /::/ ) {
+                        $plugin = 'Music::Tag::' . $plugin;
+                    }
+                    if ( $self->_has_module($plugin) ) {
+                        $ref = $plugin->new( $self, $options );
+                    }
+                    return 1;
                 }
-                if ($self->_has_module($plugin)) {
-                    $ref = $plugin->new($self, $options);
-                }
-            };
-            croak "Error loading plugin ${plugin}: $@" if $@;
+                ) {
+                croak "Error loading plugin ${plugin}: $@" if $@;
+            }
         }
         else {
             croak "Error loading plugin ${plugin}: Not Found";
         }
     }
     if ($ref) {
-        push @{$self->{_plugins}}, $ref;
+        push @{ $self->{_plugins} }, $ref;
     }
     return $ref;
 }
@@ -166,9 +175,9 @@ sub add_plugin {
 sub plugin {
     my $self   = shift;
     my $plugin = shift;
-    if (defined $plugin) {
-        foreach (@{$self->{_plugins}}) {
-            if (ref($_) =~ /$plugin$/) {
+    if ( defined $plugin ) {
+        foreach ( @{ $self->{_plugins} } ) {
+            if ( ref($_) =~ /$plugin$/ ) {
                 return $_;
             }
         }
@@ -178,19 +187,18 @@ sub plugin {
 
 sub get_tag {
     my $self = shift;
-    $self->_foreach_plugin(sub { $_[0]->get_tag });
+    $self->_foreach_plugin( sub { $_[0]->get_tag } );
     return $self;
 }
 
 sub _foreach_plugin {
     my $self     = shift;
     my $callback = shift;
-    foreach my $plugin (@{$self->{_plugins}}) {
-        next unless $plugin;
-        if (ref $plugin) {
+    foreach my $plugin ( @{ $self->{_plugins} } ) {
+        if ( ref $plugin ) {
             &{$callback}($plugin);
         }
-        else {
+        elsif ($plugin) {
             $self->error("Invalid Plugin in list: '$plugin'");
         }
     }
@@ -199,22 +207,22 @@ sub _foreach_plugin {
 
 sub set_tag {
     my $self = shift;
-    $self->_foreach_plugin(sub { $_[0]->set_tag });
+    $self->_foreach_plugin( sub { $_[0]->set_tag } );
     return $self;
 }
 
 sub strip_tag {
     my $self = shift;
-    $self->_foreach_plugin(sub { $_[0]->strip_tag });
+    $self->_foreach_plugin( sub { $_[0]->strip_tag } );
     return $self;
 }
 
-sub close {
-    my $self   = shift;
-    my @params = @_;
+# In retrospect, this was misnamed.  Too late now!
+sub close {    ## no critic (ProhibitBuiltinHomonyms, ProhibitAmbiguousNames) 
+    my $self = shift;
     return $self->_foreach_plugin(
         sub {
-            $_[0]->close(@params);
+            $_[0]->close();
             $_->{info} = undef;
             $_ = undef;
         }
@@ -224,7 +232,7 @@ sub close {
 sub changed {
     my $self = shift;
     my $new  = shift;
-    if (defined $new) {
+    if ( defined $new ) {
         $self->{changed}++;
     }
     return $self->{changed};
@@ -233,46 +241,48 @@ sub changed {
 sub data {
     my $self = shift;
     my $new  = shift;
-    if (defined $new) {
+    if ( defined $new ) {
         $self->{data} = $new;
     }
     return $self->{data};
 }
 
-sub options {
+sub options {    ## no critic (Subroutines::RequireArgUnpacking)
     my $self = shift;
-    unless (exists $self->{_options}) {
-        $self->{_options} = Config::Options->new($self->default_options);
+    if ( not exists $self->{_options} ) {
+        $self->{_options} = Config::Options->new( $self->default_options );
     }
     return $self->{_options}->options(@_);
 }
 
 sub setfileinfo {
     my $self = shift;
-    if ($self->filename) {
-        my @stat = stat $self->filename;
-        $self->mepoch($stat[9]);
-        $self->bytes($stat[7]);
-        return \@stat;
+    if ( $self->filename ) {
+        my $st = stat $self->filename;
+        $self->mepoch( $st->mtime );
+        $self->bytes( $st->size );
+        return $st;
     }
     return;
 }
 
 sub sha1 {
     my $self = shift;
-    return unless (($self->filename) && (-e $self->filename));
-    my $maxsize = 4 * 4096;
-    my $in;
-    open($in, '<', $self->filename) or die "Bad file: $self->filename\n";
-    my @stat = stat $self->filename;
+    if ( not( ( $self->filename ) && ( -e $self->filename ) ) ) {
+        return undef;  ## no critic (Subroutines::ProhibitExplicitReturnUndef)
+    }
+    my $maxsize = $SHA1_SIZE;
+    my $in      = IO::File->new();
+    $in->open( $self->filename, '<' ) or die "Bad file: $self->filename\n";
+    my $st   = stat $self->filename;
     my $sha1 = Digest::SHA1->new();
-    $sha1->add(pack("V", $stat[7]));
+    $sha1->add( pack( 'V', $st->size ) );
     my $d;
 
-    if (read($in, $d, $maxsize)) {
+    if ( $in->read( $d, $maxsize ) ) {
         $sha1->add($d);
     }
-    CORE::close($in);
+    $in->close();
     return $sha1->hexdigest;
 }
 
@@ -282,24 +292,24 @@ sub datamethods {
     if ($add) {
         my $new = lc($add);
         $DataMethods{$new} = 1;
-        if (!defined &{$new}) {
+        if ( !defined &{$new} ) {
             $self->_make_accessor($new);
         }
     }
-    return [keys %DataMethods];
+    return [ keys %DataMethods ];
 }
 
 sub used_datamethods {
     my $self = shift;
     my @ret  = ();
-    foreach my $m (@{$self->datamethods}) {
-        if ($m eq "picture") {
-            if ($self->picture_exists) {
+    foreach my $m ( @{ $self->datamethods } ) {
+        if ( $m eq 'picture' ) {
+            if ( $self->picture_exists ) {
                 push @ret, $m;
             }
         }
         else {
-            if (defined $self->$m) {
+            if ( defined $self->$m ) {
                 push @ret, $m;
             }
         }
@@ -314,7 +324,7 @@ sub wav_out {
     $self->_foreach_plugin(
         sub {
             $out = $_->wav_out($fh);
-            return $out if (defined $out);
+            return $out if ( defined $out );
         }
     );
     return $out;
@@ -329,19 +339,19 @@ sub _isutf8 {
     my $in   = shift;
 
     # If it is a proper utf8, with tag, just return it.
-    if (Encode::is_utf8($in, 1)) {
+    if ( Encode::is_utf8( $in, 1 ) ) {
         return $in;
     }
 
     my $has7f = 0;
-    foreach (split(//, $in)) {
-        if (ord($_) >= 0x7f) {
+    foreach ( split( //, $in ) ) {
+        if ( ord($_) >= 0x7f ) {    ## no critic (ProhibitMagicNumbers)
             $has7f++;
         }
     }
 
     # No char >7F it is prob. valid ASCII, just return it.
-    unless ($has7f) {
+    if ( !$has7f ) {
         utf8::upgrade($in);
         return $in;
     }
@@ -349,21 +359,20 @@ sub _isutf8 {
     # See if it is a valid UTF-16 encoding.
     #my $out;
     #eval {
-    #    $out = decode("UTF-16", $in, 1);
+    #    $out = decode('UTF-16', $in, 1);
     #};
     #return $out unless $@;
 
     # See if it is a valid UTF-16LE encoding.
     #my $out;
     #eval {
-    #    $out = decode("UTF-16LE", $in, 1);
+    #    $out = decode('UTF-16LE', $in, 1);
     #};
     #return $out unless $@;
 
     # See if it is a valid UTF-8 encoding.
     my $out;
-    eval { $out = decode("UTF-8", $in, 1); };
-    unless ($@) {
+    if ( eval { $out = decode( 'UTF-8', $in, 1 ); return 1 } ) {
         utf8::upgrade($out);
         return $out;
     }
@@ -374,34 +383,45 @@ sub _isutf8 {
     return $in;
 }
 
+# Inject an accessor into the namespace.
 sub _make_accessor {
-    my ($self, $m) = @_;
-    no strict 'refs';
-    *{__PACKAGE__ . '::' . $m} = sub {
-        my ($self, $new) = @_;
-        $self->_accessor($m, $new);
-    };
+    my ( $self, $m ) = @_;
+    {
+        ## no critic (ProhibitProlongedStrictureOverride,ProhibitNoStrict)
+
+        no strict 'refs';
+
+        *{ __PACKAGE__ . '::' . $m } = sub {
+            my ( $self, $new ) = @_;
+            $self->_accessor( $m, $new );
+        };
+
+        ## use critic
+    }
     return;
 }
 
 sub _accessor {
-    my ($self, $attr, $value, $default) = @_;
-    unless (exists $self->{data}->{uc($attr)}) {
-        $self->{data}->{uc($attr)} = undef;
+    my ( $self, $attr, $value, $default ) = @_;
+    if ( not exists $self->{data}->{ uc($attr) } ) {
+        $self->{data}->{ uc($attr) } = undef;
     }
-    if (defined $value) {
+    if ( defined $value ) {
         $value = $self->_isutf8($value);
-        if ($self->options('verbose')) {
-            $self->status(1,
-                          "Setting $attr to ",
-                          (defined $value) ? $value : "UNDEFINED");
+        if ( $self->options('verbose') ) {
+            $self->status(
+                1,
+                "Setting $attr to ",
+                ( defined $value ) ? $value : 'UNDEFINED'
+            );
         }
-        $self->{data}->{uc($attr)} = $value;
+        $self->{data}->{ uc($attr) } = $value;
     }
-    if ((defined $default) && (not defined $self->{data}->{uc($attr)})) {
-        $self->{data}->{uc($attr)} = $default;
+    if (   ( defined $default )
+        && ( not defined $self->{data}->{ uc($attr) } ) ) {
+        $self->{data}->{ uc($attr) } = $default;
     }
-    return $self->{data}->{uc($attr)};
+    return $self->{data}->{ uc($attr) };
 }
 
 sub _timeaccessor {
@@ -410,7 +430,7 @@ sub _timeaccessor {
     my $value   = shift;
     my $default = shift;
 
-    if (defined $value) {
+    if ( defined $value ) {
         if ($value =~ /^(\d\d\d\d)[\s\-]?  #Year
 			        (\d\d)?[\s\-]?     #Month
 					(\d\d)?[\s\-]?     #Day
@@ -418,42 +438,45 @@ sub _timeaccessor {
 					(\d\d)?[\s\-:]?    #Min
 					(\d\d)?            #Sec
 				   /xms
-          ) {
-            $value = sprintf("%04d-%02d-%02d %02d:%02d:%02d",
-                             $1, $2 || 1, $3 || 1,
-                             $4 || 12, $5 || 0, $6 || 0
-                            );
-            if (   ($1 == 0)
-                || ($1 eq "0000")
-                || (($1 == 1900) && ($2 == 0) && ($3 == 0))
-                || (($1 == 1900) && ($2 == 1) && ($3 == 1))) {
-                $self->status(0, "Invalid date set for ${attr}: ${value}");
+            ) {
+            ## no critic (ProhibitMagicNumbers)
+            $value = sprintf( '%04d-%02d-%02d %02d:%02d:%02d',
+                $1, $2 || 1, $3 || 1, $4 || 12, $5 || 0, $6 || 0 );
+            if (   ( $1 == 0 )
+                || ( $1 eq '0000' )
+                || ( ( $1 == 1900 ) && ( $2 == 0 ) && ( $3 == 0 ) )
+                || ( ( $1 == 1900 ) && ( $2 == 1 ) && ( $3 == 1 ) ) ) {
+                $self->status( 0, "Invalid date set for ${attr}: ${value}" );
                 $value = undef;
             }
+            ## use critic
         }
         else {
-            $self->status(0, "Invalid date set for ${attr}: ${value}");
+            $self->status( 0, "Invalid date set for ${attr}: ${value}" );
             $value = undef;
         }
     }
-    return $self->_accessor($attr, $value, $default);
+    return $self->_accessor( $attr, $value, $default );
 }
 
 sub _epochaccessor {
     my $self  = shift;
     my $attr  = shift;
     my $value = shift;
-    my $set   = undef;
-    if (defined($value)) {
+    my $new   = undef;
+    ## no critic (ProhibitMagicNumbers)
+    if ( defined($value) ) {
         my @tm = gmtime($value);
-        $set = sprintf("%04d-%02d-%02d %02d:%02d:%02d",
-                       $tm[5] + 1900,
-                       $tm[4] + 1,
-                       $tm[3], $tm[2], $tm[1], $tm[0]);
+        $new = sprintf(
+            '%04d-%02d-%02d %02d:%02d:%02d',
+            $tm[5] + 1900,
+            $tm[4] + 1,
+            $tm[3], $tm[2], $tm[1], $tm[0]
+        );
     }
-    my $v = $self->_timeaccessor($attr, $set);
+    my $v = $self->_timeaccessor( $attr, $new );
     my $ret = undef;
-    if ((defined $v)
+    if (( defined $v )
         && ($v =~ /^(\d\d\d\d)[\s\-]?  #Year
 			        (\d\d)?[\s\-]?     #Month
 					(\d\d)?[\s\-]?     #Day
@@ -461,15 +484,22 @@ sub _epochaccessor {
 					(\d\d)?[\s\-:]?    #Min
 					(\d\d)?            #Sec
 				   /xms
-           )
-      ) {
-        eval {
-            $ret = Time::Local::timegm($6 || 0, $5 || 0, $4 || 12, $3 || 1,
-                                       ($2 - 1) || 0,
-                                       ($1 - 1900));
-        };
-        $self->error($@) if $@;
+        )
+        ) {
+        if (!eval {
+                $ret = Time::Local::timegm(
+                    $6 || 0, $5 || 0, $4 || 12, $3 || 1,
+                    ( $2 - 1 ) || 0,
+                    ( $1 - 1900 )
+                );
+                return 1;
+            }
+            ) {
+            $self->error($@);
+        }
     }
+
+    #use critic
     return $ret;
 }
 
@@ -478,12 +508,12 @@ sub _dateaccessor {
     my $attr  = shift;
     my $value = shift;
     my $new   = undef;
-    if (defined($value)) {
+    if ( defined($value) ) {
         $new = $value;
     }
-    my $v = $self->_timeaccessor($attr, $new);
+    my $v = $self->_timeaccessor( $attr, $new );
     my $ret = undef;
-    if ((defined $v)
+    if (( defined $v )
         && ($v =~ /^(\d\d\d\d)[\s\-]?  #Year
 			        (\d\d)?[\s\-]?     #Month
 					(\d\d)?[\s\-]?     #Day
@@ -491,9 +521,9 @@ sub _dateaccessor {
 					(\d\d)?[\s\-:]?    #Min
 					(\d\d)?            #Sec
 				   /xms
-           )
-      ) {
-        $ret = sprintf("%04d-%02d-%02d", $1, $2, $3);
+        )
+        ) {
+        $ret = sprintf( '%04d-%02d-%02d', $1, $2, $3 );
     }
     return $ret;
 }
@@ -504,19 +534,23 @@ sub _make_time_accessor {
     my $t    = shift || $m . 'time';
     my $d    = shift || $m . 'date';
     my $e    = shift || $m . 'epoch';
-    no strict 'refs';
-    *{__PACKAGE__ . '::' . $t} = sub {
-        my ($self, $new) = @_;
-        $self->_timeaccessor(uc($m), $new);
-    };
-    *{__PACKAGE__ . '::' . $d} = sub {
-        my ($self, $new) = @_;
-        $self->_dateaccessor(uc($m), $new);
-    };
-    *{__PACKAGE__ . '::' . $e} = sub {
-        my ($self, $new) = @_;
-        $self->_epochaccessor(uc($m), $new);
-    };
+    {
+        ## no critic (ProhibitProlongedStrictureOverride,ProhibitNoStrict)
+        no strict 'refs';
+        *{ __PACKAGE__ . '::' . $t } = sub {
+            my ( $self, $new ) = @_;
+            $self->_timeaccessor( uc($m), $new );
+        };
+        *{ __PACKAGE__ . '::' . $d } = sub {
+            my ( $self, $new ) = @_;
+            $self->_dateaccessor( uc($m), $new );
+        };
+        *{ __PACKAGE__ . '::' . $e } = sub {
+            my ( $self, $new ) = @_;
+            $self->_epochaccessor( uc($m), $new );
+        };
+        ## use critic
+    }
     return;
 }
 
@@ -527,21 +561,21 @@ sub _ordinalaccessor {
     my $total = shift;
     my $new   = shift;
 
-    if (defined($new)) {
-        my ($t, $tt) = split("/", $new);
-        my $r = "";
+    if ( defined($new) ) {
+        my ( $t, $tt ) = split( m{/}, $new );
+        my $r = '';
         if ($t) {
-            $self->_accessor($pos, $t);
+            $self->_accessor( $pos, $t );
             $r .= $t;
         }
         if ($tt) {
-            $self->_accessor($total, $tt);
-            $r .= "/" . $tt;
+            $self->_accessor( $total, $tt );
+            $r .= '/' . $tt;
         }
     }
     my $ret = $self->_accessor($pos);
-    if ($self->_accessor($total)) {
-        $ret .= "/" . $self->_accessor($total);
+    if ( $self->_accessor($total) ) {
+        $ret .= '/' . $self->_accessor($total);
     }
     return $ret;
 }
@@ -551,126 +585,137 @@ sub _list_accessor {
     my $attr    = shift;
     my $value   = shift;
     my $default = shift;
-    my $d       = "";
-    if ((defined $default) && (ref $default)) {
-        $d = join(",", @{$default});
+    my $d       = '';
+    if ( ( defined $default ) && ( ref $default ) ) {
+        $d = join( ',', @{$default} );
     }
     else {
         $d = $default;
     }
-    if (defined $value) {
-        my $v = "";
-        if (ref $value) {
-            $v = join(",", @{$value});
+    if ( defined $value ) {
+        my $v = '';
+        if ( ref $value ) {
+            $v = join( ',', @{$value} );
         }
         else {
             $v = $value;
         }
-        $self->_accessor($attr, $v, $d);
+        $self->_accessor( $attr, $v, $d );
     }
     my $ret = $self->_accessor($attr);
-    if ($ret) { return [split(/\s*,\s*/, $ret)] }
-    return undef;
+    if ($ret) { return [ split( /\s*,\s*/, $ret ) ] }
+
+    # Value is undefined, so return undef.
+    return undef;    ## no critic (Subroutines::ProhibitExplicitReturnUndef)
+
 }
 
 sub albumartist {
     my $self = shift;
     my $new  = shift;
-    return $self->_accessor("albumartist", $new, $self->artist());
+    return $self->_accessor( 'albumartist', $new, $self->artist() );
 }
 
 sub albumartist_sortname {
     my $self = shift;
     my $new  = shift;
-    return $self->_accessor("albumartist_sortname", $new, $self->sortname());
+    return $self->_accessor( 'albumartist_sortname', $new,
+        $self->sortname() );
 }
 
 sub albumtags {
     my $self = shift;
     my $new  = shift;
-    return $self->_list_accessor("albumtags", $new);
+    return $self->_list_accessor( 'albumtags', $new );
 }
 
 sub artisttags {
     my $self = shift;
     my $new  = shift;
-    return $self->_list_accessor("artisttags", $new);
+    return $self->_list_accessor( 'artisttags', $new );
 }
 
 sub country {
     my $self = shift;
     my $new  = shift;
-    if (defined($new) && country2code($new)) {
-        $self->_accessor("COUNTRYCODE", country2code($new));
+    if ( defined($new) && country2code($new) ) {
+        $self->_accessor( 'COUNTRYCODE', country2code($new) );
     }
-    if ($self->countrycode) {
-        return code2country($self->countrycode);
+    if ( $self->countrycode ) {
+        return code2country( $self->countrycode );
     }
-    return $self->_accessor("country", $new);
+    return $self->_accessor( 'country', $new );
 }
 
 sub discnum {
     my $self = shift;
     my $new  = shift;
-    return $self->_ordinalaccessor("DISCNUM", "DISC", "TOTALDISCS", $new);
+    return $self->_ordinalaccessor( 'DISCNUM', 'DISC', 'TOTALDISCS', $new );
 }
 
 sub duration {
     my $self = shift;
     my $new  = shift;
-    if (defined($new)) {
-        $self->_accessor("DURATION", $new);
-        $self->_accessor("SECS",     int($new / 1000));
+    if ( defined($new) ) {
+        $self->_accessor( 'DURATION', $new );
+        $self->_accessor( 'SECS',     int( $new / 1000 ) )
+            ;    ## no critic (ProhibitMagicNumbers)
     }
-    if ($self->_accessor("DURATION")) {
-        return $self->_accessor("DURATION");
+    if ( $self->_accessor('DURATION') ) {
+        return $self->_accessor('DURATION');
     }
-    elsif ($self->_accessor("SECS")) {
-        return $self->_accessor("SECS") * 1000;
+    elsif ( $self->_accessor('SECS') ) {
+        return $self->_accessor('SECS')
+            * 1000;    ## no critic (ProhibitMagicNumbers)
     }
 }
 
 sub ean {
     my $self = shift;
     my $new  = shift;
-    if (($new) && ($new =~ /\d{13}/)) {
-        return $self->_accessor("EAN", $new);
+    if ( ($new) && ( $new =~ /\d{13}/ ) ) {
+        return $self->_accessor( 'EAN', $new );
     }
     elsif ($new) {
-        $self->status(0, "Not setting EAN to invalid value: $new\n");
+        $self->status( 0, "Not setting EAN to invalid value: $new\n" );
     }
-    return $self->_accessor("EAN");
+    return $self->_accessor('EAN');
 }
 
 sub filename {
     my $self = shift;
     my $new  = shift;
-    if (defined($new)) {
+    if ( defined($new) ) {
         my $file = $new;
         if ($new) {
             $file = File::Spec->rel2abs($new);
         }
-        if ($self->options('verbose')) {
-            $self->status(1,
-                          "Setting filename  to ",
-                          (defined $file) ? $file : "UNDEFINED");
+        if ( $self->options('verbose') ) {
+            $self->status(
+                1,
+                'Setting filename  to ',
+                ( defined $file ) ? $file : 'UNDEFINED'
+            );
         }
-        $self->_accessor("FILENAME", $file);
+        $self->_accessor( 'FILENAME', $file );
     }
-    return $self->_accessor("FILENAME");
+    return $self->_accessor('FILENAME');
 
 }
 
 sub filedir {
     my $self = shift;
-    if ($self->filename) {
-        my ($vol, $path, $file) = File::Spec->splitpath($self->filename);
-        return File::Spec->catpath($vol, $path, "");
+    if ( $self->filename ) {
+        my ( $vol, $path, $file ) = File::Spec->splitpath( $self->filename );
+        return File::Spec->catpath( $vol, $path, '' );
     }
-    return undef;
+
+    # Value is undefined, so return undef.
+    return undef;    ## no critic (Subroutines::ProhibitExplicitReturnUndef)
+
 }
 
-sub jan {
+sub jan {            ## no critic (Subroutines::RequireArgUnpacking)
     my $self = shift;
     return $self->ean(@_);
 }
@@ -678,46 +723,53 @@ sub jan {
 sub performer {
     my $self = shift;
     my $new  = shift;
-    return $self->_accessor("ARTIST", $new);
+    return $self->_accessor( 'ARTIST', $new );
 }
 
 sub _binslurp {
     my $file = shift;
-    my $in;
-    open($in, '<', $file) or croak "Couldn't open $file: $!";
+    my $in   = IO::File->new();
+    if ( !-e $file ) {
+        croak "$file doesn't exists\n";
+    }
+    $in->open( $file, '<' ) or croak "Couldn't open $file: $!";
     my $ret;
     my $off = 0;
-    while (my $r = read $in, $ret, 1024, $off) { last unless $r; $off += $r }
-    CORE::close($in);
+    while ( my $r = $in->read( $ret, $SLURP_SIZE, $off ) ) {
+        if ( !$r ) {last}
+        $off += $r;
+    }
+    $in->close();
     return $ret;
 }
 
 sub picture {
     my $self = shift;
-    unless (exists $self->{data}->{PICTURE}) {
+    $self->{data}->{PICTURE} = shift;
+    if ( not exists $self->{data}->{PICTURE} ) {
         $self->{data}->{PICTURE} = {};
     }
-    $self->{data}->{PICTURE} = shift if @_;
 
-    if (   (exists $self->{data}->{PICTURE}->{filename})
-        && ($self->{data}->{PICTURE}->{filename})) {
+    if (   ( exists $self->{data}->{PICTURE}->{filename} )
+        && ( $self->{data}->{PICTURE}->{filename} ) ) {
         my $root = File::Spec->rootdir();
-        if ($self->filename) {
+        if ( $self->filename ) {
             $root = $self->filedir;
         }
         my $picfile =
-          File::Spec->rel2abs($self->{data}->{PICTURE}->{filename}, $root);
-        if (-f $picfile) {
-            if ($self->{data}->{PICTURE}->{_Data}) {
+            File::Spec->rel2abs( $self->{data}->{PICTURE}->{filename},
+            $root );
+        if ( -f $picfile ) {
+            if ( $self->{data}->{PICTURE}->{_Data} ) {
                 delete $self->{data}->{PICTURE}->{_Data};
             }
-            my %ret = %{$self->{data}->{PICTURE}};    # Copy ref
+            my %ret = %{ $self->{data}->{PICTURE} };    # Copy ref
             $ret{_Data} = _binslurp($picfile);
             return \%ret;
         }
     }
-    elsif (   (exists $self->{data}->{PICTURE}->{_Data})
-           && (length $self->{data}->{PICTURE}->{_Data})) {
+    elsif (( exists $self->{data}->{PICTURE}->{_Data} )
+        && ( length $self->{data}->{PICTURE}->{_Data} ) ) {
         return $self->{data}->{PICTURE};
     }
     return {};
@@ -727,42 +779,45 @@ sub picture_filename {
     my $self = shift;
     my $new  = shift;
     if ($new) {
-        unless (exists $self->{data}->{PICTURE}) {
+        if ( not exists $self->{data}->{PICTURE} ) {
             $self->{data}->{PICTURE} = {};
         }
         $self->{data}->{PICTURE}->{filename} = $new;
     }
-    if (   (exists $self->{data}->{PICTURE})
-        && ($self->{data}->{PICTURE}->{filename})) {
+    if (   ( exists $self->{data}->{PICTURE} )
+        && ( $self->{data}->{PICTURE}->{filename} ) ) {
         return $self->{data}->{PICTURE}->{filename};
     }
-    elsif (   (exists $self->{data}->{PICTURE})
-           && ($self->{data}->{PICTURE}->{_Data})
-           && (length($self->{data}->{PICTURE}->{_Data}))) {
+    elsif (( exists $self->{data}->{PICTURE} )
+        && ( $self->{data}->{PICTURE}->{_Data} )
+        && ( length( $self->{data}->{PICTURE}->{_Data} ) ) ) {
         return 0;
     }
-    return undef;
+
+    # Value is undefined, so return undef.
+    return undef;    ## no critic (Subroutines::ProhibitExplicitReturnUndef)
 }
 
 sub picture_exists {
     my $self = shift;
-    if (   (exists $self->{data}->{PICTURE}->{filename})
-        && ($self->{data}->{PICTURE}->{filename})) {
+    if (   ( exists $self->{data}->{PICTURE}->{filename} )
+        && ( $self->{data}->{PICTURE}->{filename} ) ) {
         my $root = File::Spec->rootdir();
-        if ($self->filename) {
+        if ( $self->filename ) {
             $root = $self->filedir;
         }
         my $picfile =
-          File::Spec->rel2abs($self->{data}->{PICTURE}->{filename}, $root);
-        if (-f $picfile) {
+            File::Spec->rel2abs( $self->{data}->{PICTURE}->{filename},
+            $root );
+        if ( -f $picfile ) {
             return 1;
         }
         else {
-            $self->status(0, "Picture: ", $picfile, " does not exists");
+            $self->status( 0, 'Picture: ', $picfile, ' does not exists' );
         }
     }
-    elsif (   (exists $self->{data}->{PICTURE}->{_Data})
-           && (length $self->{data}->{PICTURE}->{_Data})) {
+    elsif (( exists $self->{data}->{PICTURE}->{_Data} )
+        && ( length $self->{data}->{PICTURE}->{_Data} ) ) {
         return 1;
     }
     return 0;
@@ -771,32 +826,33 @@ sub picture_exists {
 sub tracktags {
     my $self = shift;
     my $new  = shift;
-    return $self->_list_accessor("tracktags", $new);
+    return $self->_list_accessor( 'tracktags', $new );
 }
 
 sub tracknum {
     my $self = shift;
     my $new  = shift;
-    return $self->_ordinalaccessor("TRACKNUM", "TRACK", "TOTALTRACKS", $new);
+    return $self->_ordinalaccessor( 'TRACKNUM', 'TRACK', 'TOTALTRACKS',
+        $new );
 }
 
 sub upc {
     my $self = shift;
     my $new  = shift;
-    if (($new) && ($new =~ /\d{12}/)) {
-        unless ($self->ean) {
-            $self->ean('0' . $new);
+    if ( ($new) && ( $new =~ /\d{12}/ ) ) {
+        if ( !$self->ean ) {
+            $self->ean( '0' . $new );
         }
-        $self->_accessor("UPC", $new);
+        $self->_accessor( 'UPC', $new );
     }
     elsif ($new) {
-        $self->status(0, "Not setting UPC to invalid value: $new\n");
+        $self->status( 0, "Not setting UPC to invalid value: $new\n" );
     }
-    if ($self->_accessor("UPC")) {
-        return $self->_accessor("UPC");
+    if ( $self->_accessor('UPC') ) {
+        return $self->_accessor('UPC');
     }
-    elsif ($self->ean) {
-        if ($self->ean =~ /^0(\d{12})/) {
+    elsif ( $self->ean ) {
+        if ( $self->ean =~ /^0(\d{12})/ ) {
             return $1;
         }
     }
@@ -805,35 +861,38 @@ sub upc {
 sub year {
     my $self = shift;
     my $new  = shift;
-    if (defined($new)) {
-        $self->_accessor("YEAR", $new);
+    if ( defined($new) ) {
+        $self->_accessor( 'YEAR', $new );
     }
-    if ($self->_accessor("YEAR")) {
-        return $self->_accessor("YEAR");
+    if ( $self->_accessor('YEAR') ) {
+        return $self->_accessor('YEAR');
     }
-    elsif ($self->releasedate) {
-        if ($self->releasetime =~ /^(\d\d\d\d)-?/) {
-            return $self->_accessor("YEAR", $1);
+    elsif ( $self->releasedate ) {
+        if ( $self->releasetime =~ /^(\d\d\d\d)-?/ ) {
+            return $self->_accessor( 'YEAR', $1 );
         }
     }
-    return undef;
+
+    # Value is undefined, so return undef.
+    return undef;    ## no critic (Subroutines::ProhibitExplicitReturnUndef)
 }
 
-sub status {
+sub status {         ## no critic (Subroutines::RequireArgUnpacking)
     my $self = shift;
-    unless ($self->options('quiet')) {
+    if ( not $self->options('quiet') ) {
         my $name = ref($self);
-        if ($_[0] =~ /\:\:/) {
+        if ( $_[0] =~ /\:\:/ ) {
             $name = shift;
         }
         my $level = 0;
-        if ($_[0] =~ /^\d+$/) {
+        if ( $_[0] =~ /^\d+$/ ) {
             $level = shift;
         }
         my $verbose = $self->options('verbose') || 0;
-        if ($level <= $verbose) {
+        if ( $level <= $verbose ) {
             $name =~ s/^Music::Tag:://g;
-            print $self->_tenprint($name, 'bold white', 12), @_, "\n";
+            print $self->_tenprint( $name, 'bold white', $TENPRINT_SIZE ), @_,
+                "\n";
         }
     }
     return;
@@ -842,99 +901,109 @@ sub status {
 sub _tenprint {
     my $self   = shift;
     my $text   = shift;
-    my $_color = shift || "bold yellow";
-    my $size   = shift || 10;
+    my $_color = shift || 'bold yellow';
+    my $size   = shift || $TENPRINT_SIZE;
     return
-        $self->_color($_color)
-      . sprintf('%' . $size . 's: ', substr($text, 0, $size))
-      . $self->_color('reset');
+          $self->_color($_color)
+        . sprintf( '%' . $size . 's: ', substr( $text, 0, $size ) )
+        . $self->_color('reset');
 }
 
-sub _color {
+sub _color {    ## no critic (Subroutines::RequireArgUnpacking)
     my $self = shift;
-    if ($self->options->{ANSIColor}) {
+    if ( $self->options->{ANSIColor} ) {
         return Term::ANSIColor::color(@_);
     }
     else {
-        return "";
+        return '';
     }
 }
 
-sub error {
+sub error {     ## no critic (Subroutines::RequireArgUnpacking)
     my $self = shift;
 
     # unless ( $self->options('quiet') ) {
-    carp(ref($self), " ", @_);
+    carp( ref($self), ' ', @_ );
 
     # }
     return;
 }
 
 BEGIN {
-    $Music::Tag::DefaultOptions =
-      Config::Options->new(
-         {verbose       => 0,
-          quiet         => 0,
-          ANSIColor     => 0,
-          LevenshteinXS => 1,
-          Levenshtein   => 1,
-          Unaccent      => 1,
-          Inflect       => 0,
-          optionfile => ["/etc/musictag.conf", $ENV{HOME} . "/.musictag.conf"],
-         }
-      );
-    my @datamethods =
-      qw(album album_type albumartist albumartist_sortname albumid appleid
-      artist artist_end artist_start artist_start_time artist_start_epoch
-      artist_end_time artist_end_epoch artist_type artistid asin bitrate
-      booklet bytes codec comment compilation composer copyright country
-      countrycode disc discnum disctitle duration encoded_by encoder filename
-      frames framesize frequency gaplessdata genre ipod ipod_dbid ipod_location
-      ipod_trackid label lastplayedtime lastplayeddate lastplayedepoch
-      lyrics mb_albumid mb_artistid mb_trackid mip_puid mtime mdate mepoch
-      originalartist performer path picture playcount postgap pregap rating
-      albumrating recorddate recordtime releasedate releasetime recordepoch
-      releaseepoch samplecount secs songid sortname stereo tempo title
-      totaldiscs totaltracks track tracknum url user vbr year upc ean jan
-      filetype mip_fingerprint artisttags albumtags tracktags);
-    %Music::Tag::DataMethods = map { $_ => 1 } @datamethods;
+    $DefaultOptions = Config::Options->new(
+        {   verbose       => 0,
+            quiet         => 0,
+            ANSIColor     => 0,
+            LevenshteinXS => 1,
+            Levenshtein   => 1,
+            Unaccent      => 1,
+            Inflect       => 0,
+            optionfile =>
+                [ '/etc/musictag.conf', $ENV{HOME} . '/.musictag.conf' ],
+        }
+    );
+    my @datamethods = qw(
+        album album_type albumartist albumartist_sortname albumid appleid
+        artist artist_end artist_start artist_start_time artist_start_epoch
+        artist_end_time artist_end_epoch artist_type artistid asin bitrate
+        booklet bytes codec comment compilation composer copyright country
+        countrycode disc discnum disctitle duration encoded_by encoder filename
+        frames framesize frequency gaplessdata genre ipod ipod_dbid ipod_location
+        ipod_trackid label lastplayedtime lastplayeddate lastplayedepoch
+        lyrics mb_albumid mb_artistid mb_trackid mip_puid mtime mdate mepoch
+        originalartist performer path picture playcount postgap pregap rating
+        albumrating recorddate recordtime releasedate releasetime recordepoch
+        releaseepoch samplecount secs songid sortname stereo tempo title
+        totaldiscs totaltracks track tracknum url user vbr year upc ean jan
+        filetype mip_fingerprint artisttags albumtags tracktags);
+    %DataMethods = map { $_ => 1 } @datamethods;
     @Music::Tag::PLUGINS = ();
+
+    ## no critic (ProtectPrivateSubs)
 
     Music::Tag->_make_time_accessor('record');
     Music::Tag->_make_time_accessor('release');
     Music::Tag->_make_time_accessor('m');
     Music::Tag->_make_time_accessor('lastplayed');
-    Music::Tag->_make_time_accessor('artist_start', 'artist_start_time',
-                                    'artist_start', 'artist_start_epoch');
-    Music::Tag->_make_time_accessor('artist_end', 'artist_end_time',
-                                    'artist_end', 'artist_end_epoch');
+    Music::Tag->_make_time_accessor(
+        'artist_start', 'artist_start_time',
+        'artist_start', 'artist_start_epoch'
+    );
+    Music::Tag->_make_time_accessor( 'artist_end', 'artist_end_time',
+        'artist_end', 'artist_end_epoch' );
 
     foreach my $m (@datamethods) {
-        if (!defined &{$m}) {
+        if ( !defined &{$m} ) {
             Music::Tag->_make_accessor($m);
         }
     }
+
+    ## use critic
 
     my $me = __PACKAGE__;
     $me =~ s/\:\:/\//g;
 
     foreach my $d (@INC) {
         chomp $d;
-        if (-d "$d/$me/") {
-            local (*F_DIR);
-            opendir(*F_DIR, "$d/$me/");
-            while (my $b = readdir(*F_DIR)) {
-                next unless $b =~ /^(.*)\.pm$/;
-                my $mod = $1;
-                push @Music::Tag::PLUGINS, $mod;
+        if ( -d "$d/$me/" ) {
+            my $fdir = IO::Dir->new("$d/$me");
+            if ( defined $fdir ) {
+                while ( my $m = $fdir->read() ) {
+                    if ( $m =~ /^(.*)\.pm$/ ) {
+                        my $mod = $1;
+                        push @Music::Tag::PLUGINS, $mod;
+                    }
+                }
             }
+            $fdir->close();
         }
     }
 }
 
 sub DESTROY {
     my $self = shift;
-    $self->_foreach_plugin(sub { delete $_[0]->{info} });
+    $self->_foreach_plugin( sub { delete $_[0]->{info} } );
+    return;
 }
 
 1;
@@ -963,9 +1032,9 @@ Music::Tag - Interface for collecting information about music files.
 
     $info->get_tag();
    
-    print "Performer is ", $info->artist();
-    print "Album is ", $info->album();
-    print "Release Date is ", $info->releasedate();
+    print 'Performer is ', $info->artist();
+    print 'Album is ', $info->album();
+    print 'Release Date is ', $info->releasedate();
 
     # Change info
    
@@ -974,12 +1043,12 @@ Music::Tag - Interface for collecting information about music files.
    
     # Augment info from an online database!
    
-    $info->add_plugin("MusicBrainz");
-    $info->add_plugin("Amazon");
+    $info->add_plugin('MusicBrainz');
+    $info->add_plugin('Amazon');
 
     $info->get_tag;
 
-    print "Record Label is ", $info->label();
+    print 'Record Label is ', $info->label();
 
     # Save back to file
 
@@ -1074,7 +1143,7 @@ learn more, use:
 Takes a filename, an optional hashref of options, and an optional first plugin
 and returns a new Music::Tag object.  For example: 
 
-    my $info = Music::Tag->new($filename, { quiet => 1 }, "MP3" ) ;
+    my $info = Music::Tag->new($filename, { quiet => 1 }, 'MP3' ) ;
 
 If no plugin is listed, then it will automatically add the appropriate file 
 plugin based on the extension. It does this by using the L<Music::Tag::Auto> 
@@ -1105,23 +1174,23 @@ messages.
 Option is a hash reference mapping file extensions to plugins. Technically, 
 this option is for the L<Music::Tag::Auto> plugin. Default is: 
 
-    {   mp3   => "MP3",
-        m4a   => "M4A",
-        m4p   => "M4A",
-        mp4   => "M4A",
-        m4b   => "M4A",
-        '3gp' => "M4A",
-        ogg   => "OGG",
-        flac  => "FLAC"   }
+    {   mp3   => 'MP3',
+        m4a   => 'M4A',
+        m4p   => 'M4A',
+        mp4   => 'M4A',
+        m4b   => 'M4A',
+        '3gp' => 'M4A',
+        ogg   => 'OGG',
+        flac  => 'FLAC'   }
 
 =item B<optionfile>
 
 Array reference of files to load options from. Default is:
 
-    [   "/etc/musictag.conf",   
-        $ENV{HOME} . "/.musictag.conf"  ]
+    [   '/etc/musictag.conf',   
+        $ENV{HOME} . '/.musictag.conf'  ]
 
-Note that this is only used if the "load_options" method is called. 
+Note that this is only used if the 'load_options' method is called. 
 
 Option file is a pure perl config file using L<Config::Options>.
 
@@ -1157,9 +1226,9 @@ matches. Will reset to false if module is missing.
 Class method. Returns list of available plugins. For example:
 
     foreach (Music::Tag->available_plugins) {
-        if ($_ eq "Amazon") {
+        if ($_ eq 'Amazon') {
             print "Amazon is available!\n";
-            $info->add_plugin("Amazon", { locale => "uk" });
+            $info->add_plugin('Amazon', { locale => 'uk' });
         }
     }
 
@@ -1181,8 +1250,8 @@ Music::Tag objects are changed.
 Takes a plugin name and optional set of options and it to a the Music::Tag 
 object. Returns reference to a new plugin object. For example:
 
-    my $plugin = $info->add_plugin("MusicBrainz", 
-								   { preferred_country => "UK" });
+    my $plugin = $info->add_plugin('MusicBrainz', 
+								   { preferred_country => 'UK' });
 
 $options is a hashref that can be used to override the global options for a 
 plugin.
@@ -1207,7 +1276,7 @@ Options can also be included in the string, as in Amazon;locale=us;trust_title=1
 
 =item B<plugin()>
 
-my $plugin = $item->plugin("MP3")->strip_tag();
+my $plugin = $item->plugin('MP3')->strip_tag();
 
 The plugin method takes a regular expression as a string value and returns the
 first plugin whose package name matches the regular expression. Used to access 
@@ -1288,13 +1357,13 @@ the second is a value and the key gets set to the value. This method is for
 global options. For example:
 
     # Get value for "verbose" option
-    my $verbose = $info->options("verbose");
+    my $verbose = $info->options('verbose');
 
     # or...
     my $verbose = $info->options->{verbose};
 
     # Set value for "verbose" option
-    $info->options("verbose", 0);
+    $info->options('verbose', 0);
 
     # or...
     $info->options->{verbose} = 0;
@@ -1325,7 +1394,7 @@ object. Array reference should be considered read only. For example:
     }
 
     # Add is_hairband data method:
-    Music::Tag->datamethods("is_hairband");
+    Music::Tag->datamethods('is_hairband');
 
 =pod
 
@@ -1336,7 +1405,7 @@ Returns an array reference of all data methods that will not return.  For exampl
     my $info = Music::Tag->new($filename);
     $info->get_tag();
     foreach (@{$info->used_datamethods}) {
-        print $_ , ": ", $info->$_, "\n";
+        print $_ , ': ', $info->$_, "\n";
     }
 
 =pod
@@ -1351,7 +1420,13 @@ Pipes audio data as a wav file to filehandled $fh. Returns true on success, fals
 
 These methods are used to access the Music::Tag data values. Not all methods are supported by all plugins. In fact, no single plugin supports all methods (yet). Each of these is an accessor function. If you pass it a value, it will set the variable. It always returns the value of the variable.
 
-Please note that an undefined function will return undef.  This means that in list context, it will be true even when empty.  This behavior may change, however, so don't rely on it.
+Please note that an undefined function will return undef.  This means that in list context, it will be true even when empty. This also means that the following code works:
+
+	my %important = (
+		artist		=> $info->artist,
+		album		=> $info->album,
+		filename	=> $info->filename,
+	);
 
 =pod
 
@@ -1579,13 +1654,13 @@ The performer. This is an alias for artist.
 A hashref that contains the following:
 
      {
-       "MIME type"     => The MIME Type of the picture encoding
-       "Picture Type"  => What the picture is off.  Usually set to 'Cover (front)'
-       "Description"   => A short description of the picture
-       "_Data"         => The binary data for the picture.
-       "filename"      => A filename for the picture.  Data overrides "_Data" and will
+       'MIME type'     => The MIME Type of the picture encoding
+       'Picture Type'  => What the picture is off.  Usually set to 'Cover (front)'
+       'Description'   => A short description of the picture
+       '_Data'         => The binary data for the picture.
+       'filename'      => A filename for the picture.  Data overrides '_Data' and will
                           be returned as _Data if queried.  Filename is calculated as relative
-                          to the path of the music file as stated in "filename" or root if no
+                          to the path of the music file as stated in 'filename' or root if no
                           filename for music file available.
     }
 
@@ -1594,11 +1669,11 @@ Note hashref MAY be generated each call.  Do not modify and assume data-value in
 will modify the data-value as expected. In other words:
 
     # This works:
-    $info->picture( { filename => "cover.jpg" } ) ;
+    $info->picture( { filename => 'cover.jpg' } ) ;
 
     # This may not:
     my $pic = $info->picture;
-    $pic->{filename} = "back_cover.jpg";
+    $pic->{filename} = 'back_cover.jpg';
 
 =pod
 
