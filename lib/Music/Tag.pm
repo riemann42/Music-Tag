@@ -29,7 +29,7 @@ use utf8;
 my %DataMethods;
 my $DefaultOptions;
 my @PLUGINS;
-my ($SHA1_SIZE, $SLURP_SIZE, $TENPRINT_SIZE);
+my ( $SHA1_SIZE, $SLURP_SIZE, $TENPRINT_SIZE );
 Readonly::Scalar $SHA1_SIZE     => 4 * 4096;
 Readonly::Scalar $SLURP_SIZE    => 1024;
 Readonly::Scalar $TENPRINT_SIZE => 12;
@@ -220,7 +220,7 @@ sub strip_tag {
 }
 
 # In retrospect, this was misnamed.  Too late now!
-sub close {    ## no critic (ProhibitBuiltinHomonyms, ProhibitAmbiguousNames) 
+sub close {    ## no critic (ProhibitBuiltinHomonyms, ProhibitAmbiguousNames)
     my $self = shift;
     return $self->_foreach_plugin(
         sub {
@@ -730,13 +730,10 @@ sub performer {
 
 sub picture {
     my $self = shift;
-    my $new = shift;
-    #if ($new) {
-    #    $self->{data}->{PICTURE} = $new;
-    #}
-    if ( not exists $self->{data}->{PICTURE} ) {
+    unless ( exists $self->{data}->{PICTURE} ) {
         $self->{data}->{PICTURE} = {};
     }
+    $self->{data}->{PICTURE} = shift if @_;
 
     if (   ( exists $self->{data}->{PICTURE}->{filename} )
         && ( $self->{data}->{PICTURE}->{filename} ) ) {
@@ -747,17 +744,13 @@ sub picture {
         my $picfile =
             File::Spec->rel2abs( $self->{data}->{PICTURE}->{filename},
             $root );
-
         if ( -f $picfile ) {
             if ( $self->{data}->{PICTURE}->{_Data} ) {
                 delete $self->{data}->{PICTURE}->{_Data};
             }
             my %ret = %{ $self->{data}->{PICTURE} };    # Copy ref
-            $ret{_Data} = read_file($picfile, 'binmode' => ':raw' );
+            $ret{_Data} = read_file( $picfile, 'binmode' => ':raw' );
             return \%ret;
-        }
-        elsif ($picfile) {
-            carp('Picture '. $picfile.' doesn\'t exist');
         }
     }
     elsif (( exists $self->{data}->{PICTURE}->{_Data} )
