@@ -1,7 +1,7 @@
 package Music::Tag;
 use strict;
 use warnings;
-our $VERSION = .40_02;
+our $VERSION = .40_03;
 
 # Copyright (c) 2007,2008,2009 Edward Allen III. Some rights reserved.
 
@@ -89,7 +89,7 @@ sub _test_modules {
 	my %module_map = ( 
 		'ANSIColor' => 'Term::ANSIColor',
         'LevenshteinXS' => 'Text::LevenshteinXS',
-        'Levenshtein' => 'Levenshtein',
+        'Levenshtein' => 'Text::Levenshtein',
 		'Unaccent' => 'Text::Unaccent::PurePerl',
 		'Inflect'  => 'Lingua::EN::Inflect',
     );
