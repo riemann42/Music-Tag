@@ -21,12 +21,14 @@ use Time::Local;
 use IO::File;
 use IO::Dir;
 use File::stat;
+use File::Slurp;
 use Readonly;
 use utf8;
 
 #use vars qw(%DataMethods);
 my %DataMethods;
 my $DefaultOptions;
+my @PLUGINS;
 my ($SHA1_SIZE, $SLURP_SIZE, $TENPRINT_SIZE);
 Readonly::Scalar $SHA1_SIZE     => 4 * 4096;
 Readonly::Scalar $SLURP_SIZE    => 1024;
@@ -36,14 +38,14 @@ sub available_plugins {
     my $self  = shift;
     my $check = shift;
     if ($check) {
-        foreach (@Music::Tag::PLUGINS) {
+        foreach (@PLUGINS) {
             if ( $check eq $_ ) {
                 return 1;
             }
         }
         return 0;
     }
-    return @Music::Tag::PLUGINS;
+    return @PLUGINS;
 }
 
 sub default_options {
@@ -726,26 +728,12 @@ sub performer {
     return $self->_accessor( 'ARTIST', $new );
 }
 
-sub _binslurp {
-    my $file = shift;
-    my $in   = IO::File->new();
-    if ( !-e $file ) {
-        croak "$file doesn't exists\n";
-    }
-    $in->open( $file, '<' ) or croak "Couldn't open $file: $!";
-    my $ret;
-    my $off = 0;
-    while ( my $r = $in->read( $ret, $SLURP_SIZE, $off ) ) {
-        if ( !$r ) {last}
-        $off += $r;
-    }
-    $in->close();
-    return $ret;
-}
-
 sub picture {
     my $self = shift;
-    $self->{data}->{PICTURE} = shift;
+    my $new = shift;
+    #if ($new) {
+    #    $self->{data}->{PICTURE} = $new;
+    #}
     if ( not exists $self->{data}->{PICTURE} ) {
         $self->{data}->{PICTURE} = {};
     }
@@ -759,13 +747,17 @@ sub picture {
         my $picfile =
             File::Spec->rel2abs( $self->{data}->{PICTURE}->{filename},
             $root );
+
         if ( -f $picfile ) {
             if ( $self->{data}->{PICTURE}->{_Data} ) {
                 delete $self->{data}->{PICTURE}->{_Data};
             }
             my %ret = %{ $self->{data}->{PICTURE} };    # Copy ref
-            $ret{_Data} = _binslurp($picfile);
+            $ret{_Data} = read_file($picfile, 'binmode' => ':raw' );
             return \%ret;
+        }
+        elsif ($picfile) {
+            carp('Picture '. $picfile.' doesn\'t exist');
         }
     }
     elsif (( exists $self->{data}->{PICTURE}->{_Data} )
@@ -957,7 +949,7 @@ BEGIN {
         totaldiscs totaltracks track tracknum url user vbr year upc ean jan
         filetype mip_fingerprint artisttags albumtags tracktags);
     %DataMethods = map { $_ => 1 } @datamethods;
-    @Music::Tag::PLUGINS = ();
+    @PLUGINS = ();
 
     ## no critic (ProtectPrivateSubs)
 
@@ -989,9 +981,10 @@ BEGIN {
             my $fdir = IO::Dir->new("$d/$me");
             if ( defined $fdir ) {
                 while ( my $m = $fdir->read() ) {
+                    next if $m eq 'Test.pm';
                     if ( $m =~ /^(.*)\.pm$/ ) {
                         my $mod = $1;
-                        push @Music::Tag::PLUGINS, $mod;
+                        push @PLUGINS, $mod;
                     }
                 }
             }
