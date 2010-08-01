@@ -98,9 +98,9 @@ sub _test_modules {
     my %module_map = (
         'ANSIColor'     => 'Term::ANSIColor',
         'LevenshteinXS' => 'Text::LevenshteinXS',
-        'Levenshtein'   => 'Levenshtein',
-        'Unaccent'      => 'Text::Unaccent::PurePerl',
-        'Inflect'       => 'Lingua::EN::Inflect',
+        'Levenshtein' => 'Text::Levenshtein',
+		'Unaccent' => 'Text::Unaccent::PurePerl',
+		'Inflect'  => 'Lingua::EN::Inflect',
     );
     while ( my ( $k, $v ) = each %module_map ) {
         if (   ( $self->options->{$k} )

@@ -1,3 +1,10 @@
+	Release Name: 0.40_03
+		*	Text::Levenshtien was not being detected.
+
+	Release Name: 0.40_02
+		*	Fixed minor testing issue, which caused test to assume that
+			Text::Levenshtien was installed.
+
 	Release Name: 0.40_01 ( Normalized Version number accross plugins)
 		*	Started using git and github
 
