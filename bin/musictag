@@ -408,7 +408,7 @@ sub fix_file {
     }
 
     unless ( $options->{nochange} ) {
-        push @outputplugins, $info->plugin->[0];
+        push @outputplugins, $info->plugin;
     }
 
     foreach (@inputplugins) {

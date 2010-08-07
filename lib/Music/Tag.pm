@@ -225,8 +225,8 @@ sub close {    ## no critic (ProhibitBuiltinHomonyms, ProhibitAmbiguousNames)
     return $self->_foreach_plugin(
         sub {
             $_[0]->close();
-            $_->{info} = undef;
-            $_ = undef;
+            #$_->{info} = undef;
+            #$_ = undef;
         }
     );
 }
