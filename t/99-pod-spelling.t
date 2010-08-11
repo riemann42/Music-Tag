@@ -184,3 +184,9 @@ TFLT
 USLT
 apic
 unicode
+lastplayeddt
+DateTime
+mdt
+recorddt
+releasedt
+releasedt
