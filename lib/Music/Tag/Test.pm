@@ -73,7 +73,7 @@ sub random_write_date {
 	return 0 if (! exists $testoptions->{random_write_date});
 	my $c = 0;
 	foreach my $meth (@{$testoptions->{random_write_date}}) {
-		 my $val = int(rand(1_800_000_000));
+		 my $val = int(rand(1_400_000_000)) + 399_999_999;
 		 $values{$meth} = $val;
 		 ok($tag->$meth($val), 'auto write to '. $meth);
 		 $c++;

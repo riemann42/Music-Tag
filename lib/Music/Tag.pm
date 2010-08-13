@@ -514,7 +514,7 @@ sub _generate_reader {
     my $builder = $options->{builder} || undef;
     return sub {
         my $self = shift;
-        if ( not exists $self->{data}->{ $attr } ) {
+        if (( not exists $self->{data}->{ $attr } ) or ( not defined $self->{data}->{ $attr })) {
             if ($builder) {
                 $self->{data}->{$attr} = &{$builder}($self);
             }
@@ -538,7 +538,8 @@ sub _generate_writer {
         my ( $self, $value ) = @_;
         my $setvalue = $filter ? &{$filter}( $self, $value ) : $value;
         if (($validator) && (! &{$validator}($self, $value))) {
-            $self->status( 0, "Invalid value for $attr: ", ( defined $setvalue ) ? $setvalue : 'UNDEFINED');
+            $self->status( 0, "Invalid value for $attr: ", 
+                               ( defined $setvalue ) ? $setvalue : 'UNDEFINED');
             return;
         }
         if ( $self->options('verbose') ) {
@@ -549,6 +550,7 @@ sub _generate_writer {
         return $self->{data}->{ $attr };
     }
 }
+
 
 sub _generate_readwriter {
     my ($package, $reader,$writer) = @_;
@@ -591,15 +593,13 @@ sub _make_datetime_accessor {
     my $filter = sub {
         my ($self,$value) = @_;
         if ( defined $value ) {
-            my $object;
             if ($value =~ /^\-?\d+$/) {
-                $object = DateTime->from_epoch(epoch => $value);
+                return DateTime->from_epoch(epoch => $value);
             }
-            $object = DateTimeX::Easy->new($value);
-            if (! $object) {
-                $self->status( 0, "Invalid date set for ${attr}: ${value}" );
+            else {
+                return DateTimeX::Easy->new($value);
             }
-            return $object;
+            $self->status( 0, "Invalid date set for ${attr}: ${value}" );
         }
         return;
     };
@@ -684,7 +684,7 @@ sub _make_ordinal_accessor {
     };
     my $predicate = sub {
         my $self = shift;
-        my ($pp,$pt) = ('has'.$pos,'has'.$total);
+        my ($pp,$pt) = ('has_'.$pos,'has_'.$total);
         if ($self->$pp || $self->$pt) {
             return 1;
         }
@@ -896,7 +896,8 @@ BEGIN {
         builder => sub { 
             my $self = shift; 
             if ($self->has_releasedt) {
-                $self->releasdt->year;
+                print STDERR "Setting year to ", $self->releasedt->year,"\n";
+                return $self->releasedt->year;
             }
         }
     });
@@ -933,7 +934,7 @@ BEGIN {
 
 sub DESTROY {
     my $self = shift;
-    $self->_foreach_plugin( sub { delete $_[0]->{info} } );
+    $self->_foreach_plugin( sub { $_[0]->{info} = undef } );
     return;
 }
 
