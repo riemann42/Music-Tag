@@ -1,7 +1,7 @@
 package Music::Tag;
 use strict;
-use warnings;
-use version; our $VERSION = qv('.4003');
+use warnings; 
+use version; our $VERSION = qv('.4100');
 
 # Copyright (c) 2007,2008,2009 Edward Allen III. Some rights reserved.
 
@@ -31,124 +31,13 @@ use utf8;
 my %DataMethods;
 my $DefaultOptions;
 my @PLUGINS;
+my $PBP_METHODS = 1;
+my $TRADITIONAL_METHODS = 1;
+my %METHODS = ();
 my ( $SHA1_SIZE, $SLURP_SIZE, $TENPRINT_SIZE );
 Readonly::Scalar $SHA1_SIZE     => 4 * 4096;
 Readonly::Scalar $SLURP_SIZE    => 1024;
 Readonly::Scalar $TENPRINT_SIZE => 12;
-
-
-
-sub picture {
-    my $self = shift;
-    unless ( exists $self->{data}->{PICTURE} ) {
-        $self->{data}->{PICTURE} = {};
-    }
-    $self->{data}->{PICTURE} = shift if @_;
-
-    if (   ( exists $self->{data}->{PICTURE}->{filename} )
-        && ( $self->{data}->{PICTURE}->{filename} ) ) {
-        my $root = File::Spec->rootdir();
-        if ( $self->filename ) {
-            $root = $self->filedir;
-        }
-        my $picfile =
-            File::Spec->rel2abs( $self->{data}->{PICTURE}->{filename},
-            $root );
-        if ( -f $picfile ) {
-            if ( $self->{data}->{PICTURE}->{_Data} ) {
-                delete $self->{data}->{PICTURE}->{_Data};
-            }
-            my %ret = %{ $self->{data}->{PICTURE} };    # Copy ref
-            $ret{_Data} = read_file( $picfile, 'binmode' => ':raw' );
-            return \%ret;
-        }
-    }
-    elsif (( exists $self->{data}->{PICTURE}->{_Data} )
-        && ( length $self->{data}->{PICTURE}->{_Data} ) ) {
-        return $self->{data}->{PICTURE};
-    }
-    return {};
-}
-
-sub get_picture {
-    my $self = shift;
-    return $self->picture;
-}
-
-sub set_picture {
-    my $self = shift;
-    my $value = shift;
-    return $self->picture($value);
-}
-
-sub picture_filename {
-    my $self = shift;
-    my $new  = shift;
-    if ($new) {
-        if ( not exists $self->{data}->{PICTURE} ) {
-            $self->{data}->{PICTURE} = {};
-        }
-        $self->{data}->{PICTURE}->{filename} = $new;
-    }
-    if (   ( exists $self->{data}->{PICTURE} )
-        && ( $self->{data}->{PICTURE}->{filename} ) ) {
-        return $self->{data}->{PICTURE}->{filename};
-    }
-    elsif (( exists $self->{data}->{PICTURE} )
-        && ( $self->{data}->{PICTURE}->{_Data} )
-        && ( length( $self->{data}->{PICTURE}->{_Data} ) ) ) {
-        return 0;
-    }
-
-    # Value is undefined, so return undef.
-    return undef;    ## no critic (Subroutines::ProhibitExplicitReturnUndef)
-}
-
-sub picture_exists {
-    my $self = shift;
-    if (   ( exists $self->{data}->{PICTURE}->{filename} )
-        && ( $self->{data}->{PICTURE}->{filename} ) ) {
-        my $root = File::Spec->rootdir();
-        if ( $self->filename ) {
-            $root = $self->filedir;
-        }
-        my $picfile =
-            File::Spec->rel2abs( $self->{data}->{PICTURE}->{filename},
-            $root );
-        if ( -f $picfile ) {
-            return 1;
-        }
-        else {
-            $self->status( 0, 'Picture: ', $picfile, ' does not exists' );
-        }
-    }
-    elsif (( exists $self->{data}->{PICTURE}->{_Data} )
-        && ( length $self->{data}->{PICTURE}->{_Data} ) ) {
-        return 1;
-    }
-    return 0;
-}
-
-sub has_picture {
-    my $self = shift;
-    return $self->picture_exists;
-}
-
-sub available_plugins {
-    my $self  = shift;
-    my $check = shift;
-    if ($check) {
-        foreach (@PLUGINS) {
-            if ( $check eq $_ ) {
-                return 1;
-            }
-        }
-        return 0;
-    }
-    return @PLUGINS;
-}
-
-
 sub default_options {
     my $self = shift;
     return $DefaultOptions;
@@ -199,9 +88,9 @@ sub _test_modules {
     my %module_map = (
         'ANSIColor'     => 'Term::ANSIColor',
         'LevenshteinXS' => 'Text::LevenshteinXS',
-        'Levenshtein' => 'Text::Levenshtein',
-		'Unaccent' => 'Text::Unaccent::PurePerl',
-		'Inflect'  => 'Lingua::EN::Inflect',
+        'Levenshtein'   => 'Text::Levenshtein',
+        'Unaccent'      => 'Text::Unaccent::PurePerl',
+        'Inflect'       => 'Lingua::EN::Inflect',
     );
     while ( my ( $k, $v ) = each %module_map ) {
         if (   ( $self->options->{$k} )
@@ -320,12 +209,14 @@ sub strip_tag {
     return $self;
 }
 
+
 # In retrospect, this was misnamed.  Too late now!
 sub close {    ## no critic (ProhibitBuiltinHomonyms, ProhibitAmbiguousNames)
     my $self = shift;
     return $self->_foreach_plugin(
         sub {
             $_[0]->close();
+
             #$_->{info} = undef;
             #$_ = undef;
         }
@@ -389,14 +280,122 @@ sub sha1 {
     return $sha1->hexdigest;
 }
 
-sub datamethods {
+sub picture {
     my $self = shift;
+    unless ( exists $self->{data}->{PICTURE} ) {
+        $self->{data}->{PICTURE} = {};
+    }
+    $self->{data}->{PICTURE} = shift if @_;
+
+    if (   ( exists $self->{data}->{PICTURE}->{filename} )
+        && ( $self->{data}->{PICTURE}->{filename} ) ) {
+        my $root = File::Spec->rootdir();
+        if ( $self->filename ) {
+            $root = $self->filedir;
+        }
+        my $picfile =
+            File::Spec->rel2abs( $self->{data}->{PICTURE}->{filename},
+            $root );
+        if ( -f $picfile ) {
+            if ( $self->{data}->{PICTURE}->{_Data} ) {
+                delete $self->{data}->{PICTURE}->{_Data};
+            }
+            my %ret = %{ $self->{data}->{PICTURE} };    # Copy ref
+            $ret{_Data} = read_file( $picfile, 'binmode' => ':raw' );
+            return \%ret;
+        }
+    }
+    elsif (( exists $self->{data}->{PICTURE}->{_Data} )
+        && ( length $self->{data}->{PICTURE}->{_Data} ) ) {
+        return $self->{data}->{PICTURE};
+    }
+    return {};
+}
+
+sub get_picture {
+    my $self = shift;
+    return $self->picture;
+}
+
+sub set_picture {
+    my $self  = shift;
+    my $value = shift;
+    return $self->picture($value);
+}
+
+sub picture_filename {
+    my $self = shift;
+    my $new  = shift;
+    if ($new) {
+        if ( not exists $self->{data}->{PICTURE} ) {
+            $self->{data}->{PICTURE} = {};
+        }
+        $self->{data}->{PICTURE}->{filename} = $new;
+    }
+    if (   ( exists $self->{data}->{PICTURE} )
+        && ( $self->{data}->{PICTURE}->{filename} ) ) {
+        return $self->{data}->{PICTURE}->{filename};
+    }
+    elsif (( exists $self->{data}->{PICTURE} )
+        && ( $self->{data}->{PICTURE}->{_Data} )
+        && ( length( $self->{data}->{PICTURE}->{_Data} ) ) ) {
+        return 0;
+    }
+
+    # Value is undefined, so return undef.
+    return undef;    ## no critic (Subroutines::ProhibitExplicitReturnUndef)
+}
+
+sub picture_exists { goto &has_picture; }
+sub has_picture {
+    my $self = shift;
+    if (   ( exists $self->{data}->{PICTURE}->{filename} )
+        && ( $self->{data}->{PICTURE}->{filename} ) ) {
+        my $root = File::Spec->rootdir();
+        if ( $self->filename ) {
+            $root = $self->filedir;
+        }
+        my $picfile =
+            File::Spec->rel2abs( $self->{data}->{PICTURE}->{filename},
+            $root );
+        if ( -f $picfile ) {
+            return 1;
+        }
+        else {
+            $self->status( 0, 'Picture: ', $picfile, ' does not exists' );
+        }
+    }
+    elsif (( exists $self->{data}->{PICTURE}->{_Data} )
+        && ( length $self->{data}->{PICTURE}->{_Data} ) ) {
+        return 1;
+    }
+    return 0;
+}
+
+sub available_plugins {
+    my $self  = shift;
+    my $check = shift;
+    if ($check) {
+        foreach (@PLUGINS) {
+            if ( $check eq $_ ) {
+                return 1;
+            }
+        }
+        return 0;
+    }
+    return @PLUGINS;
+}
+
+
+sub datamethods {
+    my $package = shift;
+    if (ref $package) { $package = ref $package; }
     my $add  = shift;
     if ($add) {
         my $new = lc($add);
         $DataMethods{$new} = 1;
-        if ( !defined &{'get_'.$new} ) {
-            Music::Tag->_make_accessor($new => {} );
+        if ( !defined &{ 'get_' . $new } ) {
+            $package->_make_accessor( $new => {} );
         }
     }
     return [ keys %DataMethods ];
@@ -487,34 +486,100 @@ sub _isutf8 {
 }
 
 sub _add_to_namespace {
-    my ($package,$attrname,$reader,$writer,$predicate) = @_;
-    my $readwriter; 
+    my ( $package, $attrname, $reader, $writer, $predicate ) = @_;
+    $METHODS{$attrname} = {reader => $reader};
+    my $readwriter;
     if ($writer) {
-        $readwriter = _generate_readwriter($package,$reader,$writer);
+        $readwriter = _generate_readwriter( $package, $reader, $writer );
+        $METHODS{$attrname}->{writer} = $writer;
     }
     elsif ($reader) {
         $readwriter = $reader;
     }
+    if ($predicate) {
+        $METHODS{$attrname}->{predicate} = $predicate;
+    }
+    $METHODS{$attrname}->{readwriter} = $readwriter;
     {
         ## no critic (ProhibitProlongedStrictureOverride,ProhibitNoStrict)
         no strict 'refs';
-        if ($readwriter) { *{ $package.'::'.$attrname } = $readwriter; }
-        if ($writer) { *{ $package.'::set_'.$attrname } = $writer; }
-        if ($reader) { *{ $package.'::get_'.$attrname } = $reader; }
-        if ($predicate) { *{ $package.'::has_'.$attrname } = $predicate; }
+
+        if ($TRADITIONAL_METHODS) {
+            if ($readwriter) { *{ $package . '::' . $attrname } = $readwriter; }
+        }
+        if ($PBP_METHODS) {
+            if ($writer)    { *{ $package . '::set_' . $attrname } = $writer; }
+            if ($reader)    { *{ $package . '::get_' . $attrname } = $reader; }
+        }
+
+        if ($predicate) { *{ $package . '::has_' . $attrname } = $predicate; }
         ## use critic
     }
 }
 
+sub _get_method {
+    my $self = shift;
+    my $method = shift;
+    my $attr = shift;
+    if ((exists $METHODS{$attr}) && (ref $METHODS{$attr})) {
+        return $METHODS{$attr}->{$method};
+    }
+}
+
+sub _get_reader {
+    my $self = shift;
+    my $attr = shift;
+    $self->_get_method('reader',$attr);
+}
+
+sub _get_writer {
+    my $self = shift;
+    my $attr = shift;
+    $self->_get_method('writer',$attr);
+}
+
+sub _get_predicate {
+    my $self = shift;
+    my $attr = shift;
+    $self->_get_method('predicate',$attr);
+}
+
+sub _do_method {
+    my $self = shift;
+    my $method = shift;
+    my $attr = shift;
+    my @p = @_;
+    &{$self->_get_method($method,$attr)}($self,@p);
+}
+
+sub get_data {
+    my $self = shift;
+    my @opts = @_;
+    $self->_do_method('reader',@opts);
+}
+
+sub set_data {
+    my $self = shift;
+    my @opts = @_;
+    $self->_do_method('writer',@opts);
+}
+
+sub has_data {
+    my $self = shift;
+    my @opts = @_;
+    $self->_do_method('predicate',@opts);
+}
+
 sub _generate_reader {
-    my ($package, $attr, $options) = @_;
-    my $default = $options->{default} || undef;
-    my $trigger = $options->{readtrigger} || undef;
-    my $outfilter = $options->{outfilter} || undef;
-    my $builder = $options->{builder} || undef;
+    my ( $package, $attr, $options ) = @_;
+    my $default   = $options->{default}     || undef;
+    my $trigger   = $options->{readtrigger} || undef;
+    my $outfilter = $options->{outfilter}   || undef;
+    my $builder   = $options->{builder}     || undef;
     return sub {
         my $self = shift;
-        if (( not exists $self->{data}->{ $attr } ) or ( not defined $self->{data}->{ $attr })) {
+        if (   ( not exists $self->{data}->{$attr} )
+            or ( not defined $self->{data}->{$attr} ) ) {
             if ($builder) {
                 $self->{data}->{$attr} = &{$builder}($self);
             }
@@ -522,79 +587,86 @@ sub _generate_reader {
                 return $default;
             }
         }
-        if ($trigger) { &{$trigger}( $self, $self->{data}->{$attr}); }
-        return $outfilter ? &{$outfilter}($self,$self->{data}->{$attr}) : $self->{data}->{$attr};
-    }
+        if ($trigger) { &{$trigger}( $self, $self->{data}->{$attr} ); }
+        return $outfilter
+            ? &{$outfilter}( $self, $self->{data}->{$attr} )
+            : $self->{data}->{$attr};
+        }
 }
 
-
 sub _generate_writer {
-    my ($package, $attr, $options) = @_;
-    my $trigger = $options->{trigger} || undef;
-    my $filter = $options->{filter} || undef;
+    my ( $package, $attr, $options ) = @_;
+    my $trigger   = $options->{trigger}   || undef;
+    my $filter    = $options->{filter}    || undef;
     my $validator = $options->{validator} || undef;
 
     return sub {
         my ( $self, $value ) = @_;
         my $setvalue = $filter ? &{$filter}( $self, $value ) : $value;
-        if (($validator) && (! &{$validator}($self, $value))) {
-            $self->status( 0, "Invalid value for $attr: ", 
-                               ( defined $setvalue ) ? $setvalue : 'UNDEFINED');
+        if ( ($validator) && ( !&{$validator}( $self, $value ) ) ) {
+            $self->status(
+                0,
+                "Invalid value for $attr: ",
+                ( defined $setvalue ) ? $setvalue : 'UNDEFINED'
+            );
             return;
         }
         if ( $self->options('verbose') ) {
-            $self->status( 1, "Setting $attr to ", ( defined $setvalue ) ? $setvalue : 'UNDEFINED');
+            $self->status(
+                1,
+                "Setting $attr to ",
+                ( defined $setvalue ) ? $setvalue : 'UNDEFINED'
+           );
         }
-        $self->{data}->{ $attr } = $setvalue;
-        if ($trigger) { &{$trigger}( $self, $setvalue); }
-        return $self->{data}->{ $attr };
-    }
+        $self->{data}->{$attr} = $setvalue;
+        if ($trigger) { &{$trigger}( $self, $setvalue ); }
+        return $self->{data}->{$attr};
+        }
 }
 
-
 sub _generate_readwriter {
-    my ($package, $reader,$writer) = @_;
+    my ( $package, $reader, $writer ) = @_;
     return sub {
         my ( $self, $value ) = @_;
-        if (defined $value) {
-            return &{$writer}($self,$value);
+        if ( defined $value ) {
+            return &{$writer}( $self, $value );
         }
         else {
             return &{$reader}($self);
         }
-    }
+    };
 }
 
 sub _generate_predicate {
-    my ($package, $attr, $options) = @_;
-    return sub { 
+    my ( $package, $attr, $options ) = @_;
+    return sub {
         my $self = shift;
-        return (   (exists $self->{data}->{$attr}) 
-                && (defined $self->{data}->{$attr}));
+        return (   ( exists $self->{data}->{$attr} )
+                && ( defined $self->{data}->{$attr} ) );
     };
 }
 
 sub _make_accessor {
-    my ($package,$attrname,$options) = @_;
+    my ( $package, $attrname, $options ) = @_;
     my $attr = $options->{attr} || uc($attrname);
-    my $reader = _generate_reader($package,$attr,$options);
+    my $reader = _generate_reader( $package, $attr, $options );
     my $writer;
-    if (!((exists $options->{readonly}) && ($options->{readonly}))) {
-        $writer = _generate_writer($package,$attr,$options);
+    if ( !( ( exists $options->{readonly} ) && ( $options->{readonly} ) ) ) {
+        $writer = _generate_writer( $package, $attr, $options );
     }
-    my $predicate  = _generate_predicate($package,$attr,$options);
-    _add_to_namespace($package,$attrname,$reader,$writer,$predicate);
+    my $predicate = _generate_predicate( $package, $attr, $options );
+    _add_to_namespace( $package, $attrname, $reader, $writer, $predicate );
     return;
 }
 
 sub _make_datetime_accessor {
-    my ($package,$attrname,$options) = @_;
+    my ( $package, $attrname, $options ) = @_;
     my $attr = $options->{attr} || uc($attrname);
     my $filter = sub {
-        my ($self,$value) = @_;
+        my ( $self, $value ) = @_;
         if ( defined $value ) {
-            if ($value =~ /^\-?\d+$/) {
-                return DateTime->from_epoch(epoch => $value);
+            if ( $value =~ /^\-?\d+$/ ) {
+                return DateTime->from_epoch( epoch => $value );
             }
             else {
                 return DateTimeX::Easy->new($value);
@@ -603,43 +675,45 @@ sub _make_datetime_accessor {
         }
         return;
     };
-    $options->{filter} = $filter;
-    my $predicate  = _generate_predicate($package,$attr,$options);
-    my $writer = _generate_writer($package,$attr,$options);
-    my $dt_reader = _generate_reader($package,$attr,$options);
-    _add_to_namespace(
-        $package,
-        ($options->{dtname} ? $options->{dtname} : $attrname.'dt'),
-        $dt_reader,
-        $writer,
-        $predicate
-    );
+    $options->{filter}  = $filter;
 
-    $options->{outfilter} = sub { my ($self,$val) = @_; return $val->ymd };
-    my $date_reader = _generate_reader($package,$attr,$options);
+    my $predicate = _generate_predicate( $package, $attr, $options );
+    my $writer = _generate_writer( $package, $attr, $options );
+    my $dt_reader = _generate_reader( $package, $attr, $options );
+    _add_to_namespace( $package,
+        ( $options->{dtname} ? $options->{dtname} : $attrname . 'dt' ),
+        $dt_reader, $writer, $predicate );
+
+    $options->{outfilter} = sub { my ( $self, $val ) = @_; return $val->ymd };
+    my $date_reader = _generate_reader( $package, $attr, $options );
     _add_to_namespace(
         $package,
-        ($options->{datename} ? $options->{datename} : $attrname.'date'),
+        ( $options->{datename} ? $options->{datename} : $attrname . 'date' ),
         $date_reader,
         $writer,
         $predicate
     );
-  
-    $options->{outfilter} = sub { my ($self,$val) = @_; return $val->ymd .' '.$val->hms };
-    my $time_reader = _generate_reader($package,$attr,$options);
+
+    $options->{outfilter} =
+        sub { my ( $self, $val ) = @_; return $val->ymd . ' ' . $val->hms };
+    my $time_reader = _generate_reader( $package, $attr, $options );
     _add_to_namespace(
         $package,
-        ($options->{timename} ? $options->{timename} : $attrname.'time'),
+        ( $options->{timename} ? $options->{timename} : $attrname . 'time' ),
         $time_reader,
         $writer,
         $predicate
     );
 
-    $options->{outfilter} = sub { my ($self,$val) = @_; return $val->epoch };
-    my $epoch_reader = _generate_reader($package,$attr,$options);
+    $options->{outfilter} =
+        sub { my ( $self, $val ) = @_; return $val->epoch };
+    my $epoch_reader = _generate_reader( $package, $attr, $options );
     _add_to_namespace(
         $package,
-        ($options->{epochname} ? $options->{epochname} : $attrname.'epoch'),
+        (     $options->{epochname}
+            ? $options->{epochname}
+            : $attrname . 'epoch'
+        ),
         $epoch_reader,
         $writer,
         $predicate
@@ -648,58 +722,55 @@ sub _make_datetime_accessor {
 }
 
 sub _make_ordinal_accessor {
-    my ($package,$attrname,$options) = @_;
+    my ( $package, $attrname, $options ) = @_;
     my $attr = uc($attrname);
-    my $pos = $options->{pos_attr};
-    if ( ! $pos) {  croak("pos_attr required\n"); return }
+    my $pos  = $options->{pos_attr};
+    if ( !$pos ) { croak("pos_attr required\n"); return }
     my $total = $options->{total_attr};
-    if ( ! $total) {  croak("total_attr required\n"); return }
+    if ( !$total ) { croak("total_attr required\n"); return }
     my $writer = sub {
-        my ($self,$new) = @_;
+        my ( $self, $new ) = @_;
         my ( $t, $tt ) = split( m{/}, $new );
         if ($t) {
-            my $m = 'set_'.$pos;
-            $self->$m($t);
+            &{$self->_get_writer($pos)}($self,$t);
         }
         if ($tt) {
-            my $m = 'set_'.$total;
-            $self->$m($tt);
+            &{$self->_get_writer($total)}($self,$tt);
         }
         return $new;
     };
     my $reader = sub {
         my $self = shift;
-        my $m = 'get_'.$pos;
-        my $t = $self->$m;
-        $m = 'get_'.$total;
-        my $tt = $self->$m;
-        my $r = '';
+        my $m    = '_get_' . $pos;
+        my $t    = &{$self->_get_reader($pos)}($self);
+        my $tt    = &{$self->_get_reader($total)}($self);
+        my $r  = '';
         if ($t) {
             $r .= $t;
         }
         if ($tt) {
-            $r .= '/'.$tt;
+            $r .= '/' . $tt;
         }
         return $r;
     };
     my $predicate = sub {
         my $self = shift;
-        my ($pp,$pt) = ('has_'.$pos,'has_'.$total);
-        if ($self->$pp || $self->$pt) {
+        my ( $pp, $pt ) = ( 'has_' . $pos, 'has_' . $total );
+        if ( $self->$pp || $self->$pt ) {
             return 1;
         }
         return;
     };
-    _add_to_namespace( $package, $attrname, $reader, $writer,$predicate);
+    _add_to_namespace( $package, $attrname, $reader, $writer, $predicate );
     return;
 }
 
 sub _make_list_accessor {
-    my ($package,$attrname,$options) = @_;
+    my ( $package, $attrname, $options ) = @_;
     $options->{filter} = sub {
-        my ($self,$value) = @_;
+        my ( $self, $value ) = @_;
         my @ret = ();
-        if (ref $value) {
+        if ( ref $value ) {
             push @ret, @{$value};
         }
         else {
@@ -707,10 +778,10 @@ sub _make_list_accessor {
         }
         return \@ret;
     };
-    _make_accessor($package,$attrname,$options);
+    _make_accessor( $package, $attrname, $options );
 }
 
-sub status {         ## no critic (Subroutines::RequireArgUnpacking)
+sub status {    ## no critic (Subroutines::RequireArgUnpacking)
     my $self = shift;
     if ( not $self->options('quiet') ) {
         my $name = ref($self);
@@ -762,157 +833,200 @@ sub error {     ## no critic (Subroutines::RequireArgUnpacking)
     return;
 }
 
-BEGIN {
-    $DefaultOptions = Config::Options->new(
-        {   verbose       => 0,
-            quiet         => 0,
-            ANSIColor     => 0,
-            LevenshteinXS => 1,
-            Levenshtein   => 1,
-            Unaccent      => 1,
-            Inflect       => 0,
-            optionfile =>
-                [ '/etc/musictag.conf', $ENV{HOME} . '/.musictag.conf' ],
-        }
-    );
+sub _create_attributes {
+    my $package = shift;
+    my $params = shift;
+
+    if ($params->{pbp}) {
+        $PBP_METHODS = 1;
+        $TRADITIONAL_METHODS = 0;
+    }
+    
+    if (ref $package) { $package = ref $package; }
     my @datamethods = qw(
         album album_type albumartist albumartist_sortname albumid appleid
         artist artist_end artist_start artist_start_time artist_start_epoch
         artist_end_time artist_end_epoch artist_type artistid asin bitrate
         booklet bytes codec comment compilation composer copyright country
         countrycode disc discnum disctitle duration encoded_by encoder filename
-        frames framesize frequency gaplessdata genre ipod ipod_dbid ipod_location
-        ipod_trackid label lastplayedtime lastplayeddate lastplayedepoch
-        lyrics mb_albumid mb_artistid mb_trackid mip_puid mtime mdate mepoch
-        originalartist performer path picture playcount postgap pregap rating
-        albumrating recorddate recordtime releasedate releasetime recordepoch
-        releaseepoch samplecount secs songid sortname stereo tempo title
-        totaldiscs totaltracks track tracknum url user vbr year upc ean jan
-        filetype mip_fingerprint artisttags albumtags tracktags);
+        frames framesize frequency gaplessdata genre ipod ipod_dbid
+        ipod_location ipod_trackid label lastplayedtime lastplayeddate
+        lastplayedepoch lyrics mb_albumid mb_artistid mb_trackid mip_puid
+        mtime mdate mepoch originalartist performer path picture playcount
+        postgap pregap rating albumrating recorddate recordtime releasedate
+        releasetime recordepoch releaseepoch samplecount secs songid sortname
+        stereo tempo title totaldiscs totaltracks track tracknum url user vbr
+        year upc ean jan filetype mip_fingerprint artisttags albumtags
+        tracktags);
 
     %DataMethods = map { $_ => { readwrite => 1 } } @datamethods;
-    @PLUGINS = ();
 
     ## no critic (ProtectPrivateSubs)
 
-    Music::Tag->_make_accessor('albumartist' => { builder => sub { my $self = shift;  return $self->artist() } } );
-    Music::Tag->_make_accessor('albumartist_sortname' => { builder => sub { my $self = shift;  return $self->sortname() } } );
-    Music::Tag->_make_list_accessor('albumtags' => {});
-    Music::Tag->_make_list_accessor('artisttags' => {});
-    Music::Tag->_make_accessor('country' => { 
-        attr => 'COUNTRYCODE', 
-        filter => sub {
-            my ($self,$new) = @_;
-            return country2code($new);
-        },
-        outfilter => sub {
-            my ($self,$value) = @_;
-            return code2country($value);
+    $package->_make_accessor(
+        'albumartist' => {
+            builder => sub { my $self = shift; return $self->artist() }
         }
-    });
-    Music::Tag->_make_ordinal_accessor('discnum', {
-        pos_attr => 'disc',
-        total_attr => 'totaldiscs',
-    });
-    Music::Tag->_make_accessor('secs', {
-        attr => 'DURATION',
-        filter => sub {
-            my ($self,$new) = @_;
-            return $new * 1000;
-        },
-        outfilter => sub {
-            my ($self,$value) = @_;
-            return int($value / 1000);
+    );
+    $package->_make_accessor(
+        'albumartist_sortname' => {
+            builder => sub { my $self = shift; return $self->sortname() }
         }
-    });
-    Music::Tag->_make_accessor('ean', {
-        validator => sub { 
-            my ($self,$value) = @_; 
-            return $value =~ /^\d{13}$/ 
-        },
-        alias => [ qw(jan) ],
-    });
-    Music::Tag->_make_accessor('filename', {
-        filter => sub {
-            my ($self,$new) = @_;
-            return  File::Spec->rel2abs($new);
+    );
+    $package->_make_list_accessor( 'albumtags'  => {} );
+    $package->_make_list_accessor( 'artisttags' => {} );
+    $package->_make_accessor(
+        'country' => {
+            attr   => 'COUNTRYCODE',
+            filter => sub {
+                my ( $self, $new ) = @_;
+                return country2code($new);
+            },
+            outfilter => sub {
+                my ( $self, $value ) = @_;
+                return code2country($value);
+                }
         }
-    });
-    Music::Tag->_make_accessor('filedir', {
-        attr => 'FILENAME',
-        outfilter => sub {
-            my ($self,$value) = @_;
-            my ( $vol, $path, $file ) = File::Spec->splitpath( $value );
-            return File::Spec->catpath( $vol, $path, '' );
-        },
-        readonly => 1,
-    });
-    Music::Tag->_make_accessor('artist', {
-        alias => [qw(performer)]
-    });
-
-    Music::Tag->_make_list_accessor('tracktags' => {});
-
-    Music::Tag->_make_ordinal_accessor('tracknum', {
-        pos_attr => 'track',
-        total_attr => 'totaltracks',
-    });
-
-    Music::Tag->_make_accessor('upc', {
-        attr => 'EAN',
-        validator => sub { 
-            my ($self,$value) = @_; 
-            return $value =~ /^\d{13}$/ 
-        },
-        filter => sub {
-            my ($self,$value) = @_;
-            return ('0' . $value);
-        },
-        outfilter => sub {
-            my ($self, $value) = @_;
-            $value =~ s/^0//;
-            return $value;
+    );
+    $package->_make_ordinal_accessor(
+        'discnum',
+        {   pos_attr   => 'disc',
+            total_attr => 'totaldiscs',
         }
-   });
-
-    Music::Tag->_make_datetime_accessor('record' => {});
-    Music::Tag->_make_datetime_accessor('release' => {});
-    Music::Tag->_make_datetime_accessor('m' => {});
-    Music::Tag->_make_datetime_accessor('lastplayed');
-    Music::Tag->_make_datetime_accessor('artist_start' => {
-        timename => 'artist_start_time',
-        datename => 'artist_start',
-        epochname => 'artist_start_epoch',
-        dtname => 'artist_start_dt',
-    });
-    Music::Tag->_make_datetime_accessor('artist_end' => {
-        timename => 'artist_end_time',
-        datename => 'artist_end',
-        epochname => 'artist_end_epoch',
-        dtname => 'artist_end_dt',
-    });
-
-    Music::Tag->_make_accessor('year', {
-        builder => sub { 
-            my $self = shift; 
-            if ($self->has_releasedt) {
-                print STDERR "Setting year to ", $self->releasedt->year,"\n";
-                return $self->releasedt->year;
-            }
+    );
+    $package->_make_accessor(
+        'secs',
+        {   attr   => 'DURATION',
+            filter => sub {
+                my ( $self, $new ) = @_;
+                return $new * 1000;
+            },
+            outfilter => sub {
+                my ( $self, $value ) = @_;
+                return int( $value / 1000 );
+                }
         }
-    });
+    );
+    $package->_make_accessor(
+        'ean',
+        {   validator => sub {
+                my ( $self, $value ) = @_;
+                return $value =~ /^\d{13}$/;
+            },
+            alias => [qw(jan)],
+        }
+    );
+    $package->_make_accessor(
+        'filename',
+        {   filter => sub {
+                my ( $self, $new ) = @_;
+                return File::Spec->rel2abs($new);
+                }
+        }
+    );
+    $package->_make_accessor(
+        'filedir',
+        {   attr      => 'FILENAME',
+            outfilter => sub {
+                my ( $self, $value ) = @_;
+                my ( $vol, $path, $file ) = File::Spec->splitpath($value);
+                return File::Spec->catpath( $vol, $path, '' );
+            },
+            readonly => 1,
+        }
+    );
+    $package->_make_accessor( 'artist', { alias => [qw(performer)] } );
+
+    $package->_make_list_accessor( 'tracktags' => {} );
+
+    $package->_make_ordinal_accessor(
+        'tracknum',
+        {   pos_attr   => 'track',
+            total_attr => 'totaltracks',
+        }
+    );
+
+    $package->_make_accessor(
+        'upc',
+        {   attr      => 'EAN',
+            validator => sub {
+                my ( $self, $value ) = @_;
+                return $value =~ /^\d{13}$/;
+            },
+            filter => sub {
+                my ( $self, $value ) = @_;
+                return ( '0' . $value );
+            },
+            outfilter => sub {
+                my ( $self, $value ) = @_;
+                $value =~ s/^0//;
+                return $value;
+                }
+        }
+    );
+
+    $package->_make_datetime_accessor(
+        'record' => {
+            trigger => sub {
+                my ( $self, $value ) = @_;
+                if ( $value->isa('DateTime') ) {
+                    $self->set_year( $value->year );
+                }
+                }
+        }
+    );
+    $package->_make_datetime_accessor( 'release' => {} );
+    $package->_make_datetime_accessor( 'm'       => {} );
+    $package->_make_datetime_accessor('lastplayed');
+    $package->_make_datetime_accessor(
+        'artist_start' => {
+            timename  => 'artist_start_time',
+            datename  => 'artist_start',
+            epochname => 'artist_start_epoch',
+            dtname    => 'artist_start_dt',
+        }
+    );
+    $package->_make_datetime_accessor(
+        'artist_end' => {
+            timename  => 'artist_end_time',
+            datename  => 'artist_end',
+            epochname => 'artist_end_epoch',
+            dtname    => 'artist_end_dt',
+        }
+    );
+
+    $package->_make_accessor(
+        'year' => {
+            builder => sub {
+                my $self = shift;
+                if ( $self->has_releasedt ) {
+                    return $self->releasedt->year;
+                }
+                }
+        }
+    );
+
+    $METHODS{'picture'} = {
+        reader => \&get_picture,
+        writer => \&set_picture,
+        predicate => \&has_picture,
+    };
+
 
     foreach my $m (@datamethods) {
-        if ( !defined &{'get_'.$m} ) {
-            Music::Tag->_make_accessor($m => {});
+        if ( ! exists $METHODS{$m}) {
+            $package->_make_accessor( $m => {} );
         }
     }
-
     ## use critic
+}
 
-    my $me = __PACKAGE__;
-    $me =~ s/\:\:/\//g;
-
+sub _find_plugins {
+    my $package = shift;
+    if (ref $package) { $package = ref $package; }
+    my $me = $package;
+    $me =~ s{::}{/}g;
+    @PLUGINS = ();
     foreach my $d (@INC) {
         chomp $d;
         if ( -d "$d/$me/" ) {
@@ -929,18 +1043,40 @@ BEGIN {
             $fdir->close();
         }
     }
+
 }
 
+sub import {
+    my $package = shift;
+    my $params = {};
+    if    ( ref $_[0] )      { $params = $_[0]; }
+    elsif ( !scalar @_ % 2 ) { $params = {@_}; }
+    $package->_create_attributes($params);
+    $package->_find_plugins($params);
+    return 1;
+}
+
+
+BEGIN {
+    $DefaultOptions = Config::Options->new(
+        {   verbose       => 0,
+            quiet         => 0,
+            ANSIColor     => 0,
+            LevenshteinXS => 1,
+            Levenshtein   => 1,
+            Unaccent      => 1,
+            Inflect       => 0,
+            optionfile =>
+                [ '/etc/musictag.conf', $ENV{HOME} . '/.musictag.conf' ],
+        }
+    );
+}
 
 sub DESTROY {
     my $self = shift;
     $self->_foreach_plugin( sub { $_[0]->{info} = undef } );
     return;
 }
-
-1;
-
-__END__
 
 1;
 __END__
@@ -1175,8 +1311,6 @@ Load options stated in optionfile from file. Default locations are
 object method. If called as a class method the default values for all future
 Music::Tag objects are changed.  
 
-=pod
-
 =item B<add_plugin()>
 
 Takes a plugin name and optional set of options and it to a the Music::Tag 
@@ -1204,8 +1338,6 @@ See <L:Plugin Syntax> for information.
 
 Options can also be included in the string, as in Amazon;locale=us;trust_title=1.
 
-=pod
-
 =item B<plugin()>
 
 my $plugin = $item->plugin('MP3')->strip_tag();
@@ -1215,8 +1347,6 @@ first plugin whose package name matches the regular expression. Used to access
 package methods directly. Please see <L/PLUGINS> section for more details on 
 standard plugin methods.
 
-=pod
-
 =item B<get_tag()>
 
 get_tag applies all active plugins to the current Music::Tag object in the 
@@ -1224,8 +1354,6 @@ order that the plugin was added. Specifically, it runs through the list of
 plugins and performs the get_tag() method on each.  For example:
 
     $info->get_tag();
-
-=pod
 
 =item B<set_tag()>
 
@@ -1235,8 +1363,6 @@ the set_tag() method on each. For example:
 
     $info->set_tag();
 
-=pod
-
 =item B<strip_tag()>
 
 strip_tag removes info from on disc tag for all plugins. Specifically, it 
@@ -1244,16 +1370,12 @@ performs the strip_tag method on all plugins in the order added. For example:
 
     $info->strip_tag();
 
-=pod
-
 =item B<close()>
 
 closes active filehandles on all plugins. Should be called before object 
 destroyed or frozen. For example: 
 
     $info->close();
-
-=pod
 
 =item B<changed()>
 
@@ -1276,8 +1398,6 @@ or use a shared data object in a threaded environment. For example;
     use Data::Dumper;
     my $bighash = $info->data();
     print Dumper($bighash);
-
-=pod
 
 =item B<options()>
 
@@ -1309,8 +1429,6 @@ Sets the mtime and bytes attributes for you from filename.
 Returns a sha1 digest of the filesize in little endian then the first 16K of 
 the music file. Should be fairly unique. 
 
-=pod
-
 =item B<datamethods()>
 
 Returns an array reference of all data methods supported.  Optionally takes a 
@@ -1328,8 +1446,6 @@ object. Array reference should be considered read only. For example:
     # Add is_hairband data method:
     Music::Tag->datamethods('is_hairband');
 
-=pod
-
 =item B<used_datamethods()>
 
 Returns an array reference of all data methods that will not return.  For example:
@@ -1339,8 +1455,6 @@ Returns an array reference of all data methods that will not return.  For exampl
     foreach (@{$info->used_datamethods}) {
         print $_ , ': ', $info->$_, "\n";
     }
-
-=pod
 
 
 =item B<wav_out($fh)>
@@ -1363,8 +1477,6 @@ Please note that an undefined function will return undef.  This means that in li
 		filename	=> $info->filename,
 	);
 
-=pod
-
 =over 4
 
 =item B<album>, get_album, set_album, has_album
@@ -1382,8 +1494,6 @@ The artist responsible for the album. Usually the same as the artist, and will r
 =item B<albumartist_sortname>, get_albumartist_sortname, set_albumartist_sortname, has_albumartist_sortname
 
 The name of the sort-name of the albumartist (e.g. Hersh, Kristin or Throwing Muses, The)
-
-=pod
 
 =item B<albumtags>, get_albumtags, set_albumtags, has_albumtags
 
@@ -1474,8 +1584,6 @@ A copyright message can be placed here.
 
 Return the country that the track was released in.
 
-=pod
-
 =item B<countrycode>, get_countrycode, set_countrycode, has_countrycode
 
 The two digit country code.  Sets country (and is set by country)
@@ -1492,13 +1600,9 @@ In a multi-volume set, the title of a disc.
 
 The disc number and optionally the total number of discs, seperated by a slash. Setting it sets the disc and totaldiscs values.
 
-=pod
-
 =item B<duration>, get_duration, set_duration, has_duration
 
 The length of the track in milliseconds. Returns secs * 1000 if not set. Changes the value of secs when set.
-
-=pod
 
 =item B<ean>, get_ean, set_ean, has_ean
 
@@ -1519,8 +1623,6 @@ The filename of the track.
 =item B<filedir>, get_filedir, set_filedir, has_filedir
 
 The path that music file is located in.
-
-=pod
 
 
 =item B<frequency>, get_frequency, set_frequency, has_frequency
@@ -1606,8 +1708,6 @@ The Music Magic fingerprint
 
 The performer. This is an alias for artist.
 
-=pod
-
 =item B<picture>, get_picture, set_picture, has_picture
 
 A hashref that contains the following:
@@ -1634,14 +1734,10 @@ will modify the data-value as expected. In other words:
     my $pic = $info->picture;
     $pic->{filename} = 'back_cover.jpg';
 
-=pod
-
 =item B<picture_filename>, get_picture_filename, set_picture_filename, has_picture_filename
 
 Returns filename used for picture data.  If no filename returns 0.  If no picture returns undef. 
 If a value is passed, sets the filename. filename is path relative to the music file.
-
-=pod
 
 =item B<picture_exists>, get_picture_exists, set_picture_exists, has_picture_exists
 
@@ -1749,8 +1845,6 @@ A array reference or comma seperated list of tags in plain text for the track.
 
 The track number and optionally the total number of tracks, seperated by a slash. Setting it sets the track and totaltracks values (and vice-versa).
 
-=pod
-
 =item B<upc>, get_upc, set_upc, has_upc
 
 The Universal Product Code on the package of a product. Returns same value as ean without initial 0 if ean has an initial 0. If set and ean is not set, sets ean and adds initial 0.  It is possible for ean and upc to be different if ean does not have an initial 0.
@@ -1820,7 +1914,11 @@ File is stereo.
 
 File is VBR.
 
-TODO: These need to be documented
+=back
+
+=head2 Semi-internal methods for use by plugins.
+
+=over 4
 
 =item B<status>
 
@@ -1830,7 +1928,35 @@ Semi-internal method for printing status.
 
 Semi-internal method for printing errors.
 
-=pod
+=item B<get_data()>
+
+Calls the data access method for an attribute
+
+Example:
+
+    # Get the album artist
+    $info->get_data('albumartist');
+
+
+=item B<set_data()>
+
+Calls the data writer method for an attribute
+
+Example:
+
+    # Set the album artist
+    $info->set_data('albumartist','Sarah Slean');
+
+=item B<has_data()>
+
+Calls the data predicate method for an attribute
+
+Example:
+
+    # Does it have an album artist?
+    if ( not $info->has_data('albumartist')) {
+        $info->set_data('albumartist','Sarah Slean');
+    }
 
 =back
 
