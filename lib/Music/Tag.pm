@@ -1,7 +1,7 @@
 package Music::Tag;
 use strict;
 use warnings; 
-use version; our $VERSION = qv('.4100');
+use version; our $VERSION = qv('.4101');
 
 # Copyright (c) 2007,2008,2009 Edward Allen III. Some rights reserved.
 
@@ -488,23 +488,22 @@ sub _isutf8 {
 sub _add_to_namespace {
     my ( $package, $attrname, $reader, $writer, $predicate ) = @_;
     $METHODS{$attrname} = {reader => $reader};
-    my $readwriter;
-    if ($writer) {
-        $readwriter = _generate_readwriter( $package, $reader, $writer );
-        $METHODS{$attrname}->{writer} = $writer;
-    }
-    elsif ($reader) {
-        $readwriter = $reader;
-    }
     if ($predicate) {
         $METHODS{$attrname}->{predicate} = $predicate;
     }
-    $METHODS{$attrname}->{readwriter} = $readwriter;
     {
         ## no critic (ProhibitProlongedStrictureOverride,ProhibitNoStrict)
         no strict 'refs';
 
         if ($TRADITIONAL_METHODS) {
+            my $readwriter;
+            if ($writer) {
+                $readwriter = _generate_readwriter( $package, $reader, $writer );
+                $METHODS{$attrname}->{writer} = $writer;
+            } elsif ($reader) {
+                $readwriter = $reader;
+            }
+            $METHODS{$attrname}->{readwriter} = $readwriter;
             if ($readwriter) { *{ $package . '::' . $attrname } = $readwriter; }
         }
         if ($PBP_METHODS) {
@@ -523,6 +522,9 @@ sub _get_method {
     my $attr = shift;
     if ((exists $METHODS{$attr}) && (ref $METHODS{$attr})) {
         return $METHODS{$attr}->{$method};
+    }
+    else {
+        return sub {};
     }
 }
 
@@ -841,6 +843,9 @@ sub _create_attributes {
         $PBP_METHODS = 1;
         $TRADITIONAL_METHODS = 0;
     }
+    if ($params->{traditional}) {
+        $TRADITIONAL_METHODS = 1;
+    }
     
     if (ref $package) { $package = ref $package; }
     my @datamethods = qw(
@@ -1055,7 +1060,6 @@ sub import {
     $package->_find_plugins($params);
     return 1;
 }
-
 
 BEGIN {
     $DefaultOptions = Config::Options->new(
@@ -1930,7 +1934,9 @@ Semi-internal method for printing errors.
 
 =item B<get_data()>
 
-Calls the data access method for an attribute
+Calls the data access method for an attribute.  This is the recommended way to
+access data from a plugin, as the user may have elected to have PBP attribute
+methods, or not...
 
 Example:
 
@@ -1940,7 +1946,7 @@ Example:
 
 =item B<set_data()>
 
-Calls the data writer method for an attribute
+Calls the data writer method for an attribute.
 
 Example:
 
@@ -1949,7 +1955,7 @@ Example:
 
 =item B<has_data()>
 
-Calls the data predicate method for an attribute
+Calls the data predicate method for an attribute.
 
 Example:
 
@@ -2025,3 +2031,4 @@ http://www.gnu.org/copyleft/gpl.html.
 
 =end readme
 
+=cut

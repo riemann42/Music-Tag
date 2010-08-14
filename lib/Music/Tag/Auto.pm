@@ -35,8 +35,7 @@ sub new {
     $self->info($parent);
     $self->options($options);
     my $plugin   = "";
-
-    if ( $self->info->filename =~ /\.([^\.]*)$/ ) {
+    if ( $self->info->get_data('filename') =~ /\.([^\.]*)$/ ) {
 		if (exists $self->options->{autoplugin}->{lc($1)}) {
 		   $plugin = $self->options->{autoplugin}->{lc($1)}; 
 		}
@@ -46,16 +45,16 @@ sub new {
 			$plugin = "Music::Tag::" . $plugin;
 		}
 		$self->status(1, "Auto loading plugin: $plugin");
-	my $type = lc($plugin);
-	$type =~ s/^.*:://;
+        my $type = lc($plugin);
+        $type =~ s/^.*:://;
         $self->status(2, "Adding filetype: $plugin");
-        $self->info->filetype($type);
+        $self->info->set_data('filetype',$type);
 		if($self->info->_has_module($plugin)) {
 			return $plugin->new( $self->info, $self->options );
 		}
     }
     else {
-        $self->error("Sorry, I can't find a plugin for ", $self->info->filename);
+        $self->error("Sorry, I can't find a plugin for ", $self->info->get_data('filename'));
         return undef;
     }
 }
