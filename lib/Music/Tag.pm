@@ -1,6 +1,6 @@
 package Music::Tag;
 use strict; use warnings; use utf8;
-use version; our $VERSION = qv('.4101');
+our $VERSION = '0.4101';
 
 # Copyright © 2007,2008,2009,2010 Edward Allen III. Some rights reserved.
 #
