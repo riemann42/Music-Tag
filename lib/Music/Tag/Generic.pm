@@ -1,9 +1,8 @@
 package Music::Tag::Generic;
-use strict;
-use warnings;
-our $VERSION = .4101;
+use strict; use warnings; use utf8;
+our $VERSION = '.4101';
 
-# Copyright (c) 2007,2008,2009,2010 Edward Allen III. Some rights reserved.
+# Copyright © 2007,2008,2009,2010 Edward Allen III. Some rights reserved.
 
 #
 # You may distribute under the terms of either the GNU General Public
@@ -362,7 +361,7 @@ Edward Allen III <ealleniii _at_ cpan _dot_ org>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2007,2008 Edward Allen III. Some rights reserved.
+Copyright © 2007,2008 Edward Allen III. Some rights reserved.
 
 =head1 LICENSE
 

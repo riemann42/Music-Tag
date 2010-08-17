@@ -1,10 +1,10 @@
 package Music::Tag::Auto;
-use strict;
-use warnings;
-our $VERSION = .40_01;
+use strict; use warnings; use utf8;
+
+our $VERSION = '.4101';
 use base qw(Music::Tag::Generic);
 
-# Copyright (c) 2006 Edward Allen III. Some rights reserved.
+# Copyright © 2006 Edward Allen III. Some rights reserved.
 
 #
 # You may distribute under the terms of either the GNU General Public
@@ -172,7 +172,7 @@ http://www.gnu.org/copyleft/gpl.html.
 
 =head1 COPYRIGHT
 
-Copyright (c) 2007 Edward Allen III. Some rights reserved.
+Copyright © 2007 Edward Allen III. Some rights reserved.
 
 
 

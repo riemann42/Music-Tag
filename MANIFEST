@@ -1,12 +1,16 @@
+.gitignore
+.gitmodules
+.perltidyrc
 Artistic
 bin/musictag
-CHANGES
+Changes
 Copying
 eg/printinfo.pl
 lib/Music/Tag.pm
 lib/Music/Tag/Auto.pm
 lib/Music/Tag/Generic.pm
 lib/Music/Tag/Option.pm
+lib/Music/Tag/Test.pm
 Makefile.PL
 MANIFEST
 META.yml
@@ -20,6 +24,5 @@ t/6-unaccent.t
 t/97-pod.t
 t/98-pod-coverage.t
 t/fake.music
-t/MusicTagTest.pm
 t/options.conf
 TODO

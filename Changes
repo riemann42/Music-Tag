@@ -1,11 +1,22 @@
-	Release Name: 0.40_03
+    Release Name: 0.4101 2010-08-16
+        *   Another rewrite of the method system.  Now you can pass 
+            pbp=>1 when importing to get PBP style get_ and set_ methods.
+
+        *   Bugfixes and POD cleaning
+
+        *   Added a test module for module testing
+
+	Release Name: 0.40_03 2010-08-01
 		*	Text::Levenshtien was not being detected.
 
-	Release Name: 0.40_02
+	Release Name: 0.40_02 2010-07-28 
 		*	Fixed minor testing issue, which caused test to assume that
 			Text::Levenshtien was installed.
 
-	Release Name: 0.40_01 ( Normalized Version number accross plugins)
+	Release Name: 0.40_01 2010-07-27
+    
+        *   Normalized Version number accross plugins
+
 		*	Started using git and github
 
 		* 	Added capability methods to plugins (required_values, set_values
@@ -24,7 +35,7 @@
 
 		*	Fixed a few open file handles that didn't have a close.
 
-    Release Name: 0.33
+    Release Name: 0.33 2008-02-24
         *   Revised POD (thanks Ivan Tubert-Brohman for Test::Spelling!)
 
         *   Added the ability for plugins to set a verbosity level with
@@ -37,24 +48,24 @@
 
         *   Started using Pod::Readme for README and CHANGES
 
-    Release Name: 0.32
+    Release Name: 0.32 2008-02-23
         *   Fixed critical bug with Term::ANSIColor
 
-    Release Name: 0.31
+    Release Name: 0.31 2008-02-22
         *   Added example
 
         *   Added used_datamethods method
 
-    Release Name: 0.30
+    Release Name: 0.30 2008-02-20
         *   Config::Options .07 now required
 
         *   POD and Kwalitee changes
 
-    Release Name: 0.29
+    Release Name: 0.29  
         *   Fixed bug in autoplugin default settings preventing ogg and flac
             from working.
 
-    Release Name: 0.28
+    Release Name: 0.28 2008-02-11
         *   Seperated plugins into seperate distributions
 
         *   Revised module detection code to actually work
@@ -71,7 +82,7 @@
 
         *   Added option to use --[presetname] to call a preset in musictag
 
-    Release Name: 0.27
+    Release Name: 0.27 2007-12-17
         *   More documentation and tested POD.
 
         *   datamethods method now can be used to add new datamethods
@@ -92,7 +103,7 @@
 
         *   Revised OGG and FLAC plugins to clean up code (much slicker now)
 
-    Release Name: 0.26
+    Release Name: 0.26 2007-12-10
         *   Removed several prerequistes that weren't used
 
         *   Fixed error in README about prerequisite

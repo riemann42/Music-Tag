@@ -1,7 +1,9 @@
 package Music::Tag::Test;
+use strict; use warnings; use utf8;
+our $VERSION = '.4101';
+
 use base 'Exporter';
 use vars '@EXPORT';
-use strict;
 use Test::More;
 use Digest::SHA1;
 use File::Copy;
@@ -323,6 +325,6 @@ http://www.gnu.org/copyleft/gpl.html.
 
 =head1 COPYRIGHT
 
-Copyright (c) 2007,2010 Edward Allen III. Some rights reserved.
+Copyright © 2007,2010 Edward Allen III. Some rights reserved.
 
 

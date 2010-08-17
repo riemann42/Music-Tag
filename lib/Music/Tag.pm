@@ -1,14 +1,12 @@
 package Music::Tag;
-use strict;
-use warnings; 
+use strict; use warnings; use utf8;
 use version; our $VERSION = qv('.4101');
 
-# Copyright (c) 2007,2008,2009 Edward Allen III. Some rights reserved.
-
+# Copyright © 2007,2008,2009,2010 Edward Allen III. Some rights reserved.
 #
 # You may distribute under the terms of either the GNU General Public
 # License or the Artistic License, as specified in the README file.
-#
+
 
 use Carp;
 use Locale::Country;
@@ -405,15 +403,8 @@ sub used_datamethods {
     my $self = shift;
     my @ret  = ();
     foreach my $m ( @{ $self->datamethods } ) {
-        if ( $m eq 'picture' ) {
-            if ( $self->picture_exists ) {
-                push @ret, $m;
-            }
-        }
-        else {
-            if ( defined $self->$m ) {
-                push @ret, $m;
-            }
+        if ($self->has_data($m)) {
+            push @ret, $m;
         }
     }
     return \@ret;
@@ -510,8 +501,9 @@ sub _add_to_namespace {
             if ($writer)    { *{ $package . '::set_' . $attrname } = $writer; }
             if ($reader)    { *{ $package . '::get_' . $attrname } = $reader; }
         }
-
-        if ($predicate) { *{ $package . '::has_' . $attrname } = $predicate; }
+        if ($TRADITIONAL_METHODS || $PBP_METHODS) {
+            if ($predicate) { *{ $package . '::has_' . $attrname } = $predicate; }
+        }
         ## use critic
     }
 }
@@ -1096,7 +1088,7 @@ Music::Tag - Interface for collecting information about music files.
 
 =head1 SYNOPSIS
 
-    use Music::Tag;
+    use Music::Tag (traditional => 1);
 
     my $info = Music::Tag->new($filename);
    
@@ -1118,7 +1110,7 @@ Music::Tag - Interface for collecting information about music files.
     $info->add_plugin('MusicBrainz');
     $info->add_plugin('Amazon');
 
-    $info->get_tag;
+    $info->get_tag();
 
     print 'Record Label is ', $info->label();
 
@@ -1183,6 +1175,12 @@ This module requires these other modules and libraries:
    Locale::Country
    Digest::SHA1
    Config::Options
+   Time::Local
+   Test::More
+   File::Copy
+   IO::File
+   Scalar::Util
+
 
 I strongly recommend the following to improve web searches:
 
@@ -1198,8 +1196,8 @@ The following just makes things pretty:
 
 =head1 EXECUTABLE SCRIPT
 
-An executable script, L<musictag> is  allows quick tagging of MP3 files.  To 
-learn more, use:
+An executable script, L<musictag> is included.  This script allows quick 
+tagging of MP3 files and access to the plugins.  To learn more, use:
 
    musictag --help 
    musictag --longhelp
@@ -1239,7 +1237,7 @@ Default is false. Setting this to true causes plugin to generate a lot of noise.
 =item B<quiet>
 
 Default is false. Setting this to true prevents the plugin from giving status 
-messages.
+messages.  This default may be changed in the future, so always set it.
 
 =item B<autoplugin>
 
@@ -1288,7 +1286,7 @@ Text::Unaccent::PurePerl. Will reset to false if module is missing.
 
 =item B<Inflect>
 
-Default false. When true, uses Linque::EN::Inflect to perform approximate 
+Default false. When true, uses Lingua::EN::Inflect to perform approximate 
 matches. Will reset to false if module is missing.
 
 =back
@@ -1304,9 +1302,18 @@ Class method. Returns list of available plugins. For example:
         }
     }
 
+This method can also be used to check for a particular plugin, by passing
+an option.  For example:
+
+    if (Music::Tag->avaialble_plugins('Amazon') {
+        print "Amazon is available!\n";
+        $info->add_plugin('Amazon', { locale => 'uk' });
+    }
+
 =item B<default_options()>
 
-Class method. Returns default options as a Config::Options method.
+Class method. Returns default options as a L<Config::Options|Config::Options>
+object.
 
 =item B<LoadOptions()>
 
@@ -1317,8 +1324,8 @@ Music::Tag objects are changed.
 
 =item B<add_plugin()>
 
-Takes a plugin name and optional set of options and it to a the Music::Tag 
-object. Returns reference to a new plugin object. For example:
+Takes a plugin name and optional set of options. Returns reference to a new 
+plugin object. For example:
 
     my $plugin = $info->add_plugin('MusicBrainz', 
 								   { preferred_country => 'UK' });
@@ -1326,21 +1333,22 @@ object. Returns reference to a new plugin object. For example:
 $options is a hashref that can be used to override the global options for a 
 plugin.
 
-First option can be an string such as "MP3" in which case 
+First option can be a string such as "MP3" in which case 
 Music::Tag::MP3->new($self, $options) is called, an object name such as 
 "Music::Tag::Custom::MyPlugin" in which case 
-Music::Tag::MP3->new($self, $options) is called or an object, which is 
-added to the list.
+Music::Tag::MP3->new($self, $options) is called,
+or an object, which is added to the list.
 
 Current plugins include L<MP3|Music::Tag::MP3>, L<OGG|Music::Tag::OGG>, 
 L<FLAC|Music::Tag::FLAC>, L<M4A|Music::Tag::M4A>, L<Amazon|Music::Tag::Amazon>, 
 L<File|Music::Tag::File>, L<MusicBrainz|Music::Tag::MusicBrainz>, 
-L<Lyrics|Music::Tag::Lyrics> and l<LyricsFetcher|Music::Tag::LyricsFetcher>,  
+and L<LyricsFetcher|Music::Tag::LyricsFetcher>.  
 
 Additional plugins can be created and may be available on CPAN.  
-See <L:Plugin Syntax> for information.
+See L<Music::Tag::Generic|Music::Tag::Generic> for base class for plugins.
 
 Options can also be included in the string, as in Amazon;locale=us;trust_title=1.
+This was added to make calling from L<musictag|musictag> easier.
 
 =item B<plugin()>
 
@@ -1348,7 +1356,7 @@ my $plugin = $item->plugin('MP3')->strip_tag();
 
 The plugin method takes a regular expression as a string value and returns the
 first plugin whose package name matches the regular expression. Used to access 
-package methods directly. Please see <L/PLUGINS> section for more details on 
+package methods directly. Please see L</"PLUGINS"> section for more details on 
 standard plugin methods.
 
 =item B<get_tag()>
@@ -1376,7 +1384,7 @@ performs the strip_tag method on all plugins in the order added. For example:
 
 =item B<close()>
 
-closes active filehandles on all plugins. Should be called before object 
+Closes active filehandles on all plugins. Should be called before object 
 destroyed or frozen. For example: 
 
     $info->close();
@@ -1393,6 +1401,7 @@ Amazon, File, or Lyrics plugins. For example:
     # Force there to be a change
     $info->changed(1);
 
+
 =item B<data()>
 
 Returns a reference to the hash which stores all data about a track and 
@@ -1402,6 +1411,8 @@ or use a shared data object in a threaded environment. For example;
     use Data::Dumper;
     my $bighash = $info->data();
     print Dumper($bighash);
+
+Please note that some values, specifically date values, will be objects.
 
 =item B<options()>
 
@@ -1426,11 +1437,12 @@ global options. For example:
 
 =item B<setfileinfo>
 
-Sets the mtime and bytes attributes for you from filename. 
+Sets the mtime and bytes attributes for you from filename. This may be
+moved to the L<File|Music::Tag::File> plugin in the future. 
 
 =item B<sha1()>
 
-Returns a sha1 digest of the filesize in little endian then the first 16K of 
+Returns a sha1 digest of the file size in little endian then the first 16K of 
 the music file. Should be fairly unique. 
 
 =item B<datamethods()>
@@ -1452,7 +1464,8 @@ object. Array reference should be considered read only. For example:
 
 =item B<used_datamethods()>
 
-Returns an array reference of all data methods that will not return.  For example:
+Returns an array reference of all data methods that have values set.
+For example:
 
     my $info = Music::Tag->new($filename);
     $info->get_tag();
@@ -1463,7 +1476,9 @@ Returns an array reference of all data methods that will not return.  For exampl
 
 =item B<wav_out($fh)>
 
-Pipes audio data as a wav file to filehandled $fh. Returns true on success, false on failure, undefined if no plugin supports this.
+Pipes audio data as a wav file to filehandle $fh. Returns true on success, false on failure, undefined if no plugin supports this.
+
+This is currently experimental.
 
 =back
 
@@ -1471,15 +1486,66 @@ Pipes audio data as a wav file to filehandled $fh. Returns true on success, fals
 
 These methods are used to access the Music::Tag data values. Not all methods are supported by all plugins. In fact, no single plugin supports all methods (yet). Each of these is an accessor function. If you pass it a value, it will set the variable. It always returns the value of the variable.
 
-As of version 0.4004, each data method also available as get_method, set_method, and has_method.  These behave as expected. An option will be available soon to enable / disable these methods, along with the default.
+There are three distinct ways of calling these methods: Traditional, PBP, and using the L</"get_data">, L</"set_data">, and L</"has_data"> methods. 
 
-Please note that an undefined function will return undef.  This means that in list context, it will be true even when empty. This also means that the following code works:
+Damian Conway in his book "Perl Best Practices" states that data access methods should be called with separate methods for getting and setting values.  This can be configured by passing pbp => 1 to the use option, e.g.
+    
+    use Music::Tag ( pbp => 1 );
+
+Once set, data can be accessed by adding get_ as a suffix to the method, written to by adding set__ as a suffix, and checked by adding has_ as a suffix. For example:
+
+
+    use Music::Tag ( pbp => 1 );
+
+    use feature qw(say);
+
+    my $info = Music::Tag->new($filename);
+   
+    # Read basic info
+
+    $info->get_tag();
+  
+    if ($info->has_artist()) {
+        say 'Performer is ', $info->get_artist();
+    }
+   
+    $info->set_artist('Throwing Muses');
+
+    if ($info->has_artist()) {
+        say 'Performer is now: ', $info->get_artist();
+        # Will print 'Throwing Muses'
+    }
+
+    $info->set_tag();
+    $info->close();
+
+To force Traditional, add traditional => 1 as an option, e.g.
+
+    use Music::Tag (traditional => 1);
+
+You can have pbp and traditional set to get both, if you want.  Please note that calling it more than once in the same program, or set of programs, will have the affect of reading the methods.  For example
+
+
+    use Music::Tag (traditional => 1);
+    use Music::Tag (pbp => 1);
+
+    # is the same as
+    
+    use Music::Tag (traditional =>1, pbp=>1)
+
+When using the traditional methods, an undefined function will return undef.  This means that in list context, it will be true even when empty. This also means that the following code works:
 
 	my %important = (
 		artist		=> $info->artist,
 		album		=> $info->album,
 		filename	=> $info->filename,
 	);
+
+The best way to determine if a method is defined, is to use the predicate method (e.g. has_album).  This is defined if either traditional or pbp is set to true.
+
+The final way to access data is to use the L</"get_data">, L</"set_data">, and L</"has_data"> methods. These will work even if pbp and traditional are both set to 0.  This is how plugins should access data methods.
+
+Here is a list of the current supported data methods:
 
 =over 4
 
@@ -1501,7 +1567,7 @@ The name of the sort-name of the albumartist (e.g. Hersh, Kristin or Throwing Mu
 
 =item B<albumtags>, get_albumtags, set_albumtags, has_albumtags
 
-A array reference or comma seperated list of tags in plain text for the album.
+A array reference or comma separated list of tags in plain text for the album.
 
 =item B<albumrating>, get_albumrating, set_albumrating, has_albumrating
 
@@ -1509,7 +1575,7 @@ The rating (value is 0 - 100) for the album (not supported by any plugins yet).
 
 =item B<artist>, get_artist, set_artist, has_artist
 
-The artist responsible for the track.
+The artist responsible for the track. This should be the performer.
 
 =item B<artist_start>, get_artist_start, set_artist_start, has_artist_start
 
@@ -1549,11 +1615,11 @@ See release_epoch.
 
 =item B<artisttags>, get_artisttags, set_artisttags, has_artisttags
 
-A array reference or comma seperated list of tags in plain text for the artist.
+A array reference or comma separated list of tags in plain text for the artist. Always returns a list.
 
 =item B<artist_type>, get_artist_type, set_artist_type, has_artist_type
 
-The type of artist. Usually Group or Person.
+The type of artist. Usually Group or Person. 
 
 =item B<asin>, get_asin, set_asin, has_asin
 
@@ -1566,7 +1632,13 @@ Bitrate of file (average).
 =item B<booklet>, get_booklet, set_booklet, has_booklet
 
 URL to a digital booklet. Usually in PDF format. iTunes passes these out sometimes, or you could scan a booklet
-and use this to store value. URL is assumed to be relative to file location.
+and use this to store value. B<URL is assumed to be relative to file location>.
+
+=pod
+
+=item B<bytes>, get_bytes, set_bytes, has_bytes
+
+Filesize in bytes
 
 =item B<comment>, get_comment, set_comment, has_comment
 
@@ -1574,7 +1646,7 @@ A comment about the track.
 
 =item B<compilation>, get_compilation, set_compilation, has_compilation
 
-True if album is Various Artist, false otherwise.  Don't set to true for Best Hits.
+True if album is Various Artist, false otherwise. I don't set this to true for Best Hits, iTunes sometimes does.
 
 =item B<composer>, get_composer, set_composer, has_composer
 
@@ -1586,11 +1658,11 @@ A copyright message can be placed here.
 
 =item B<country>, get_country, set_country, has_country
 
-Return the country that the track was released in.
+Return the country that the track was released in. Stored as countrycode, so must be a valid country.
 
 =item B<countrycode>, get_countrycode, set_countrycode, has_countrycode
 
-The two digit country code.  Sets country (and is set by country)
+The two digit country code. 
 
 =item B<disc>, get_disc, set_disc, has_disc
 
@@ -1602,7 +1674,7 @@ In a multi-volume set, the title of a disc.
 
 =item B<discnum>, get_discnum, set_discnum, has_discnum
 
-The disc number and optionally the total number of discs, seperated by a slash. Setting it sets the disc and totaldiscs values.
+The disc number and optionally the total number of discs, separated by a slash. Setting it sets the disc and totaldiscs values.
 
 =item B<duration>, get_duration, set_duration, has_duration
 
@@ -1628,10 +1700,10 @@ The filename of the track.
 
 The path that music file is located in.
 
+=item B<filetype>, get_filetype, set_filetype, has_filetype
 
-=item B<frequency>, get_frequency, set_frequency, has_frequency
+Name of plugin used to read and store data directly to file.
 
-The frequency of the recording (in Hz).
 
 =item B<genre>, get_genre, set_genre, has_genre
 
@@ -1741,11 +1813,11 @@ will modify the data-value as expected. In other words:
 =item B<picture_filename>, get_picture_filename, set_picture_filename, has_picture_filename
 
 Returns filename used for picture data.  If no filename returns 0.  If no picture returns undef. 
-If a value is passed, sets the filename. filename is path relative to the music file.
+If a value is passed, sets the filename. The filename is path relative to the music file.
 
 =item B<picture_exists>, get_picture_exists, set_picture_exists, has_picture_exists
 
-Returns true if Music::Tag object has picture data (or filename), false if not. Convenience method to prevant reading the file. 
+Returns true if Music::Tag object has picture data (or filename), false if not. Convenience method to prevent reading the file. 
 Will return false of filename listed for picture does not exist.
 
 =item B<playcount>, get_playcount, set_playcount, has_playcount
@@ -1843,11 +1915,13 @@ The track number
 
 =item B<tracktags>, get_tracktags, set_tracktags, has_tracktags
 
-A array reference or comma seperated list of tags in plain text for the track.
+A array reference or comma separated list of tags in plain text for the track.
+
+=pod
 
 =item B<tracknum>, get_tracknum, set_tracknum, has_tracknum
 
-The track number and optionally the total number of tracks, seperated by a slash. Setting it sets the track and totaltracks values (and vice-versa).
+The track number and optionally the total number of tracks, separated by a slash. Setting it sets the track and totaltracks values (and vice-versa).
 
 =item B<upc>, get_upc, set_upc, has_upc
 
@@ -1855,15 +1929,15 @@ The Universal Product Code on the package of a product. Returns same value as ea
 
 =item B<url>, get_url, set_url, has_url
 
-A url associated with the track (often a link to the details page on Amazon).
+A URL associated with the track (often a link to the details page on Amazon).
 
 =item B<year>, get_year, set_year, has_year
 
-The year a track was released. Defaults to year set in releasedate if not set. Does not set releasedate.
+The year a track was released. Returns year set in releasedate if available. Does not set releasedate.
 
 =back
 
-=head1 Non Standard Data Access Methods
+=head2 Non Standard Data Access Methods
 
 These methods are not currently used by any standard plugin.  They may be used in the future, or by other plugins (such as a SQL plugin).  Included here to standardize expansion methods.
 
@@ -1877,26 +1951,21 @@ These three values can be used by a database plugin. They should be GUIDs like t
 
 Suggested values for an iPod plugin.
 
-=item B<pregap, postgap, gaplessdata, samplecount, appleid>, get_pregap, get_postgap, get_gaplessdata, get_samplecount, get_appleid, set_pregap, set_postgap, set_gaplessdata, set_samplecount, set_appleid, has_pregap, has_postgap, has_gaplessdata, has_samplecount, has_appleid
-
-Used to store gapless data.  Some of this is supported by L<Music::Tag::MP3> as an optional value requiring a patched
-L<MP3::Info>.
+=pod
 
 =item B<user>, get_user, set_user, has_user
 
 Used for user data. Reserved. Please do not use this in any Music::Tag plugin published on CPAN.
 
-=item B<bytes>, get_bytes, set_bytes, has_bytes
+=back
 
-Filesize in bytes
+=head2 MP3 File information
 
-=item B<codec>, get_codec, set_codec, has_codec
+=over 4
 
-Codec used for encoding file
+=item B<frequency>, get_frequency, set_frequency, has_frequency
 
-=item B<filetype>, get_filetype, set_filetype, has_filetype
-
-Filetype
+The frequency of the recording (in Hz).
 
 =item B<frames>, get_frames, set_frames, has_frames
 
@@ -1916,7 +1985,17 @@ File is stereo.
 
 =item B<vbr>, get_vbr, set_vbr, has_vbr
 
-File is VBR.
+File has a variable bitrate.
+
+=item B<pregap, postgap, gaplessdata, samplecount, appleid>, get_pregap, get_postgap, get_gaplessdata, get_samplecount, get_appleid, set_pregap, set_postgap, set_gaplessdata, set_samplecount, set_appleid, has_pregap, has_postgap, has_gaplessdata, has_samplecount, has_appleid
+
+Used to store gapless data.  Some of this is supported by L<Music::Tag::MP3> as an optional value requiring a patched
+L<MP3::Info>.
+
+=item B<codec>, get_codec, set_codec, has_codec
+
+Codec used for encoding file
+
 
 =back
 
@@ -1976,6 +2055,9 @@ No method for evaluating an album as a whole, only track-by-track method.
 Several plugins do not support all data values. Has not been tested in a 
 threaded environment.
 
+Please use github for bug tracking: L<http://github.com/riemann42/Music-Tag/issues|http://github.com/riemann42/Music-Tag/issues>.
+
+
 =head1 SEE ALSO 
 
 L<Music::Tag::Amazon>, L<Music::Tag::File>, L<Music::Tag::FLAC>, 
@@ -1990,17 +2072,13 @@ L<Text::Unaccent::PurePerl>, L<Lingua::EN::Inflect>
 
 Source is available at github: L<http://github.com/riemann42/Music-Tag|http://github.com/riemann42/Music-Tag>.
 
-=head1 BUG TRACKING
-
-Please use github for bug tracking: L<http://github.com/riemann42/Music-Tag/issues|http://github.com/riemann42/Music-Tag/issues>.
-
 =head1 AUTHOR 
 
 Edward Allen III <ealleniii _at_ cpan _dot_ org>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2007,2008,2010 Edward Allen III. Some rights reserved.
+Copyright © 2007,2008,2010 Edward Allen III. Some rights reserved.
 
 =head1 LICENSE
 
