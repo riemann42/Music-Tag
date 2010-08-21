@@ -17,6 +17,7 @@ WriteMakefile( NAME         => 'Music::Tag',
 							  'File::Copy'				=> 0,
 							  'Time::Local'				=> 1.1901,
 							  'Scalar::Util'            => 1.21,
+                              'DateTimeX::Easy'         => 0,
                             },
              );
 

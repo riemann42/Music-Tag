@@ -1,3 +1,6 @@
+    Release Name: 0.4101 2010-08-20
+        *   Added DateTimeX::Easy as a requirement
+
     Release Name: 0.4101 2010-08-16
         *   Another rewrite of the method system.  Now you can pass 
             pbp=>1 when importing to get PBP style get_ and set_ methods.

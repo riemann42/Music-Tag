@@ -50,6 +50,7 @@ DEPENDENCIES
        Locale::Country
        Digest::SHA1
        Config::Options
+       DateTimeX::Easy
 
     I strongly recommend the following to improve web searches:
 
