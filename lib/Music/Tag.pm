@@ -1,6 +1,6 @@
 package Music::Tag;
 use strict; use warnings; use utf8;
-our $VERSION = '0.4102';
+our $VERSION = '0.4103';
 
 # Copyright © 2007,2008,2009,2010 Edward Allen III. Some rights reserved.
 #
@@ -1078,11 +1078,13 @@ sub DESTROY {
 __END__
 =pod
 
-=for changes stop
-
 =head1 NAME
 
 Music::Tag - Interface for collecting information about music files.
+
+=head1 VERSION
+
+Music-Tag-0.4103
 
 =for readme stop
 
@@ -1178,9 +1180,11 @@ This module requires these other modules and libraries:
    Time::Local
    Test::More
    File::Copy
+   File::Slurp
+   File::stat
    IO::File
    Scalar::Util
-
+   DateTimeX::Easy
 
 I strongly recommend the following to improve web searches:
 

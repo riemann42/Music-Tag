@@ -1,6 +1,9 @@
 NAME
     Music::Tag - Interface for collecting information about music files.
 
+VERSION
+    Music-Tag-0.4103
+
 DESCRIPTION
     Extendable module for working with Music Tags. Music::Tag Is powered by
     various plugins that collect data about a song based on whatever
@@ -50,6 +53,13 @@ DEPENDENCIES
        Locale::Country
        Digest::SHA1
        Config::Options
+       Time::Local
+       Test::More
+       File::Copy
+       File::Slurp
+       File::stat
+       IO::File
+       Scalar::Util
        DateTimeX::Easy
 
     I strongly recommend the following to improve web searches:
@@ -63,8 +73,8 @@ DEPENDENCIES
        Term::ANSIColor
 
 EXECUTABLE SCRIPT
-    An executable script, musictag is allows quick tagging of MP3 files. To
-    learn more, use:
+    An executable script, musictag is included. This script allows quick
+    tagging of MP3 files and access to the plugins. To learn more, use:
 
        musictag --help 
        musictag --longhelp
@@ -72,15 +82,11 @@ EXECUTABLE SCRIPT
 SOURCE
     Source is available at github: http://github.com/riemann42/Music-Tag.
 
-BUG TRACKING
-    Please use github for bug tracking:
-    http://github.com/riemann42/Music-Tag/issues.
-
 AUTHOR
     Edward Allen III <ealleniii _at_ cpan _dot_ org>
 
 COPYRIGHT
-    Copyright (c) 2007,2008,2010 Edward Allen III. Some rights reserved.
+    Copyright © 2007,2008,2010 Edward Allen III. Some rights reserved.
 
 LICENSE
     This program is free software; you can redistribute it and/or modify it
