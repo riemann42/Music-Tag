@@ -495,14 +495,15 @@ sub _add_to_namespace {
                 $readwriter = $reader;
             }
             $METHODS{$attrname}->{readwriter} = $readwriter;
-            if ($readwriter) { *{ $package . '::' . $attrname } = $readwriter; }
+            if ((not defined *{ $package . '::' . $attrname }) && ($readwriter)) { *{ $package . '::' . $attrname } = $readwriter; }
+            
         }
         if ($PBP_METHODS) {
-            if ($writer)    { *{ $package . '::set_' . $attrname } = $writer; }
-            if ($reader)    { *{ $package . '::get_' . $attrname } = $reader; }
+            if ((not defined *{ $package . '::set_' . $attrname }) && ($writer))    { *{ $package . '::set_' . $attrname } = $writer; }
+            if ((not defined *{ $package . '::get_' . $attrname }) && ($reader))    { *{ $package . '::get_' . $attrname } = $reader; }
         }
         if ($TRADITIONAL_METHODS || $PBP_METHODS) {
-            if ($predicate) { *{ $package . '::has_' . $attrname } = $predicate; }
+            if ((not defined *{ $package . '::has_' . $attrname }) && ($predicate)) { *{ $package . '::has_' . $attrname } = $predicate; }
         }
         ## use critic
     }
