@@ -70,7 +70,9 @@ sub new {
         bless $self, $class;
         $self->{_plugins} = [];
         $self->options($options);
-        $self->filename($filename);
+        if ($filename) {
+            $self->set_data('filename', $filename);
+        }
         $self->{changed} = 0;
     }
 
@@ -249,24 +251,27 @@ sub options {    ## no critic (Subroutines::RequireArgUnpacking)
 
 sub setfileinfo {
     my $self = shift;
-    if ( $self->filename ) {
-        my $st = stat $self->filename;
-        $self->mepoch( $st->mtime );
-        $self->bytes( $st->size );
+    if ( $self->get_data('filename' )) {
+        my $st = stat $self->get_data('filename');
+        $self->set_data('mepochr', $st->mtime );
+        $self->set_data('bytes', $st->size );
         return $st;
     }
     return;
 }
 
+sub get_sha1 { goto &sha1; }
+
 sub sha1 {
     my $self = shift;
-    if ( not( ( $self->filename ) && ( -e $self->filename ) ) ) {
+    my $filename = $self->get_data('filename');
+    if ( not( ( $filename ) && ( -e $filename ) ) ) {
         return undef;  ## no critic (Subroutines::ProhibitExplicitReturnUndef)
     }
     my $maxsize = $SHA1_SIZE;
     my $in      = IO::File->new();
-    $in->open( $self->filename, '<' ) or die "Bad file: $self->filename\n";
-    my $st   = stat $self->filename;
+    $in->open( $filename, '<' ) or die "Bad file: $filename\n";
+    my $st   = stat $filename;
     my $sha1 = Digest::SHA1->new();
     $sha1->add( pack( 'V', $st->size ) );
     my $d;
@@ -319,6 +324,17 @@ sub set_picture {
     my $self  = shift;
     my $value = shift;
     return $self->picture($value);
+}
+
+sub set_picture_filename {
+    my $self  = shift;
+    my $value = shift;
+    return $self->picture_filename($value);
+}
+
+sub get_picture_filename {
+    my $self  = shift;
+    return $self->picture_filename();
 }
 
 sub picture_filename {
@@ -501,6 +517,7 @@ sub _add_to_namespace {
         if ($PBP_METHODS) {
             if ((not defined *{ $package . '::set_' . $attrname }) && ($writer))    { *{ $package . '::set_' . $attrname } = $writer; }
             if ((not defined *{ $package . '::get_' . $attrname }) && ($reader))    { *{ $package . '::get_' . $attrname } = $reader; }
+            $METHODS{$attrname}->{writer} = $writer;
         }
         if ($TRADITIONAL_METHODS || $PBP_METHODS) {
             if ((not defined *{ $package . '::has_' . $attrname }) && ($predicate)) { *{ $package . '::has_' . $attrname } = $predicate; }
@@ -863,12 +880,12 @@ sub _create_attributes {
 
     $package->_make_accessor(
         'albumartist' => {
-            builder => sub { my $self = shift; return $self->artist() }
+            builder => sub { my $self = shift; return $self->get_data('artist') }
         }
     );
     $package->_make_accessor(
         'albumartist_sortname' => {
-            builder => sub { my $self = shift; return $self->sortname() }
+            builder => sub { my $self = shift; return $self->get_data('sortname') }
         }
     );
     $package->_make_list_accessor( 'albumtags'  => {} );
@@ -1445,7 +1462,7 @@ global options. For example:
 Sets the mtime and bytes attributes for you from filename. This may be
 moved to the L<File|Music::Tag::File> plugin in the future. 
 
-=item B<sha1()>
+=item B<sha1()> B<get_sha1()>
 
 Returns a sha1 digest of the file size in little endian then the first 16K of 
 the music file. Should be fairly unique. 

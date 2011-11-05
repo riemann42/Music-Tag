@@ -14,3 +14,7 @@ Makefile.old
 *.tar.gz
 cover_db
 Debian_CPANTS.txt*
+lib.old
+tmp
+MYMETA.yml
+t/LWPCache

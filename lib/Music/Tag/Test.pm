@@ -9,9 +9,15 @@ use Digest::SHA1;
 use File::Copy;
 use 5.006;
 
-@EXPORT = qw(create_tag read_tag random_write random_read random_write_num random_read_num random_write_date random_read_date filetest);
+@EXPORT = qw(create_tag read_tag random_write random_read random_write_num random_read_num random_write_date random_read_date filetest test_pbp);
 
 my %values = ();
+
+my $PBP_METHODS = 0;
+
+sub test_pbp {
+    $PBP_METHODS = 1;
+}
 
 sub create_tag {
     my $filetest    = shift;
@@ -35,7 +41,8 @@ sub read_tag {
 		SKIP: {
 			skip "$meth test skipped", 1 if (! $testoptions->{values_in}->{$meth});
 			$c++;
-			cmp_ok($tag->$meth, 'eq', $testoptions->{values_in}->{$meth});
+            my $ameth = $PBP_METHODS ? 'get_' . $meth : $meth;
+			cmp_ok($tag->$ameth, 'eq', $testoptions->{values_in}->{$meth});
 		}
 	}
 	return $c;
@@ -49,7 +56,8 @@ sub random_write {
 	foreach my $meth (@{$testoptions->{random_write}}) {
 		my $val = "test" . $meth . int(rand(1000));
 		$values{$meth} = $val;
-		ok($tag->$meth($val), 'auto write to ' . $meth);
+        my $wmeth = $PBP_METHODS ? 'set_' . $meth : $meth;
+		ok($tag->$wmeth($val), 'auto write to ' . $meth);
 		$c++;
 	}
 	return $c;
@@ -63,7 +71,8 @@ sub random_write_num {
 	foreach my $meth (@{$testoptions->{random_write_num}}) {
 		my $val = int(rand(10))+1;
 		$values{$meth} = $val;
-		ok($tag->$meth($val), 'auto write to ' . $meth);
+        my $wmeth = $PBP_METHODS ? 'set_' . $meth : $meth;
+		ok($tag->$wmeth($val), 'auto write to ' . $meth);
 		$c++;
 	}
 	return $c;
@@ -77,7 +86,8 @@ sub random_write_date {
 	foreach my $meth (@{$testoptions->{random_write_date}}) {
 		 my $val = int(rand(1_400_000_000)) + 399_999_999;
 		 $values{$meth} = $val;
-		 ok($tag->$meth($val), 'auto write to '. $meth);
+         my $wmeth = $PBP_METHODS ? 'set_' . $meth : $meth;
+		 ok($tag->$wmeth($val), 'auto write to '. $meth);
 		 $c++;
 	}
 	return $c;
@@ -89,7 +99,8 @@ sub random_read {
 	return 0 if (! exists $testoptions->{random_write});
 	my $c = 0;
 	foreach my $meth (@{$testoptions->{random_write}}) {
-		cmp_ok($tag->$meth, 'eq', $values{$meth}, 'auto read of ' . $meth);
+        my $ameth = $PBP_METHODS ? 'get_' . $meth : $meth;
+		cmp_ok($tag->$ameth, 'eq', $values{$meth}, 'auto read of ' . $meth);
 		$c++;
 	}
 	return $c;
@@ -101,7 +112,8 @@ sub random_read_num {
 	return 0 if (! exists $testoptions->{random_write_num});
 	my $c = 0;
 	foreach my $meth (@{$testoptions->{random_write_num}}) {
-		cmp_ok($tag->$meth, '==', $values{$meth}, 'auto read of ' . $meth);
+        my $ameth = $PBP_METHODS ? 'get_' . $meth : $meth;
+		cmp_ok($tag->$ameth, '==', $values{$meth}, 'auto read of ' . $meth);
 		$c++;
 	}
 	return $c;
@@ -118,6 +130,10 @@ sub random_read_date {
 		 my $meth_d = $meth;
 		 $meth_d =~ s/epoch/date/;
 		 $meth_d =~ s/_date//;
+         if ($PBP_METHODS) {
+            $meth_t = 'get_' . $meth_t;
+            $meth_d = 'get_' . $meth_d;
+         }
 		 my @tm = gmtime($values{$meth});
 		 cmp_ok(substr($tag->$meth_t,0,16), 'eq', substr(sprintf('%04d-%02d-%02d %02d:%02d:%02d', $tm[5]+1900, $tm[4]+1, $tm[3], $tm[2], $tm[1], $tm[0]),0,16), 'auto read from '. $meth_t);
 		 cmp_ok($tag->$meth_d, 'eq', sprintf('%04d-%02d-%02d', $tm[5]+1900, $tm[4]+1, $tm[3]), 'auto read from '. $meth_d);
@@ -131,11 +147,12 @@ sub read_picture {
 	my $testoptions = shift;
 	my $c = 0;
 	return 0 if (! $testoptions->{picture_read});
-	ok($tag->picture_exists, 'Picture Exists');
+	ok($tag->has_picture, 'Picture Exists');
 	$c+=2;
 	if ($testoptions->{picture_sha1}) {
 		my $sha1 = Digest::SHA1->new();
-		$sha1->add($tag->picture->{_Data});
+        my $rmeth = $PBP_METHODS ? 'get_picture' : 'picture';
+		$sha1->add($tag->$rmeth->{_Data});
 		cmp_ok($sha1->hexdigest, 'eq', $testoptions->{picture_sha1}, 'digest of picture matches during read');
 		$c++;
 	}
@@ -146,12 +163,13 @@ sub write_picture {
 	my $testoptions = shift;
 	my $c = 0;
 	return 0 if (! $testoptions->{picture_file});
-	ok($tag->picture_filename($testoptions->{picture_file}), 'add picture');
-	ok($tag->picture_exists, 'Picture Exists after write');
+	ok($tag->set_picture_filename($testoptions->{picture_file}), 'add picture');
+	ok($tag->has_picture, 'Picture Exists after write');
 	$c+=2;
 	if ($testoptions->{picture_sha1}) {
 		my $sha1 = Digest::SHA1->new();
-		$sha1->add($tag->picture->{_Data});
+        my $rmeth = $PBP_METHODS ? 'get_picture' : 'picture';
+		$sha1->add($tag->$rmeth->{_Data});
 		cmp_ok($sha1->hexdigest, 'eq', $testoptions->{picture_sha1}, 'digest of picture matches after write');
 		$c++;
 	}
@@ -177,10 +195,10 @@ sub filetest {
 
 		read_tag($tag,$testoptions);
 		if ($testoptions->{picture_in}) {
-			ok($tag->picture_exists, 'Picture should exists');
+			ok($tag->has_picture, 'Picture should exists');
 		}
 		else {
-			ok(! $tag->picture_exists, 'Picture should not exist');
+			ok(! $tag->has_picture, 'Picture should not exist');
 		}
 		$c++;
 
@@ -254,6 +272,10 @@ Music::Tag::Test provides routines to test Music::Tag plugins
 =head1 SUBROUTINES
 
 =over
+
+=item B<test_pbp>
+
+Use pbp methods for remaining tests.
 
 =item B<filetest()>
 
