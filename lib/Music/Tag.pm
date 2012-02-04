@@ -146,7 +146,7 @@ sub add_plugin {
                         $plugin = 'Music::Tag::' . $plugin;
                     }
                     if ( $self->_has_module($plugin) ) {
-                        $ref = $plugin->new( $self, $options );
+                        $ref = $plugin->new( $self, $options ) or die;
                     }
                     return 1;
                 }
