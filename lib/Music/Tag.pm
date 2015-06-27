@@ -1096,6 +1096,8 @@ sub DESTROY {
 __END__
 =pod
 
+=encoding utf8
+
 =head1 NAME
 
 Music::Tag - Interface for collecting information about music files.

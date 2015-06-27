@@ -63,6 +63,8 @@ sub new {
 __END__
 =pod
 
+=encoding utf8
+
 =head1 NAME
 
 Music::Tag::Auto - Plugin module for Music::Tag to load other plugins by file extension.

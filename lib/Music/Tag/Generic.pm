@@ -239,6 +239,8 @@ sub DESTROY {
 __END__
 =pod
 
+=encoding utf8
+
 =head1 NAME
 
 Music::Tag::Generic - Parent Class for Music::Tag objects
