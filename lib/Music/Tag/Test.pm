@@ -234,6 +234,8 @@ __END__
 
 =pod
 
+=encoding utf8
+
 =head1 NAME
 
 Music::Tag::Test - Routines to test Music::Tag plugins

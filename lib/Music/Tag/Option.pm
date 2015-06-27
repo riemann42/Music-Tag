@@ -30,6 +30,8 @@ sub get_tag { goto &set_tag; }
 __END__
 =pod
 
+=encoding utf8
+
 =head1 NAME
 
 Music::Tag::Option - Plugin module for Music::Tag to set tags via tag optons 
