@@ -7,6 +7,11 @@ WriteMakefile(
     AUTHOR        => 'Edward Allen (ealleniii _at_ cpan _dot_ org)',
     EXE_FILES     => ['bin/musictag'],
     LICENSE       => 'perl',
+    $ExtUtils::MakeMaker::VERSION >= 6.5503 ? (
+      BUILD_REQUIRES => {
+          'Test::Weaken' => 0,
+      }
+    ) : (),
     PREREQ_PM     => {
         'Config::Options' => 0.07,
         'Data::Dumper'    => 2.0,
